@@ -1,0 +1,21 @@
+{
+  "appId": "com.ecoverify.app",
+  "appName": "Eco Verify",
+  "webDir": ".next",
+  "server": {
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_icon_config_sample",
+      "iconColor": "#4880d1",
+      "sound": "beep.wav"
+    }
+  },
+  "android": {
+    "buildOptions": {
+      "keystorePath": "release.keystore",
+      "keystoreAlias": "upload"
+    }
+  }
+}

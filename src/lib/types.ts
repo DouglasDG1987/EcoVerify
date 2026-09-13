@@ -18,6 +18,8 @@ export type RewardStatus = "pendente" | "em_processamento" | "pago" | "falhou";
 
 export type RewardRede = "fone_nativo" | "bep20_bsc";
 
+export type NotificationTipo = "sistema" | "contato_admin" | "alerta";
+
 export interface PublicProfile {
   id: string;
   nome: string;
@@ -68,6 +70,22 @@ export interface LeaderboardEntry {
   id: string;
   nome: string;
   pontosTotais: number;
+}
+
+export interface Notification {
+  id: string;
+  userId: string;
+  tipo: NotificationTipo;
+  titulo: string;
+  mensagem: string;
+  lida: boolean;
+  createdAt: string;
+}
+
+export interface AdminUser extends PublicProfile {
+  email: string;
+  ativo: boolean;
+  motivoBanimento: string | null;
 }
 
 export interface RewardQueueItem {

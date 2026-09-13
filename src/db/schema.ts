@@ -61,6 +61,12 @@ export const rewardRedeEnum = pgEnum("reward_rede", [
   "bep20_bsc",
 ]);
 
+export const notificationTipoEnum = pgEnum("notification_tipo", [
+  "sistema",
+  "contato_admin",
+  "alerta",
+]);
+
 // profiles: equivalente a public.profiles (1:1 com auth.users no Supabase).
 // Aqui também guarda password_hash pois não há Supabase Auth separado.
 export const profiles = pgTable("profiles", {
@@ -71,6 +77,8 @@ export const profiles = pgTable("profiles", {
   role: roleEnum("role").notNull().default("citizen"),
   pontosTotais: integer("pontos_totais").notNull().default(0),
   walletAddress: text("wallet_address"),
+  ativo: boolean("ativo").notNull().default(true),
+  motivoBanimento: text("motivo_banimento"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -200,3 +208,26 @@ export const rewardQueue = pgTable(
     check("reward_queue_valor_fone_check", sql`${table.valorFone} >= 0`),
   ],
 );
+
+export const notifications = pgTable(
+  "notifications",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    tipo: notificationTipoEnum("tipo").notNull().default("sistema"),
+    titulo: text("titulo").notNull(),
+    mensagem: text("mensagem").notNull(),
+    lida: boolean("lida").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("notifications_user_id_idx").on(table.userId),
+    index("notifications_lida_idx").on(table.lida),
+  ],
+);
+
+export type NotificationTipo = typeof notificationTipoEnum.enumValues[number];

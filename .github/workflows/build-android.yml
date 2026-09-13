@@ -1,0 +1,108 @@
+name: Build Android APK
+
+permissions:
+  contents: write
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+        
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
+      
+    - name: Build Next.js
+      run: npm run build
+
+    - name: Configure Capacitor server URL
+      env:
+        CAPACITOR_SERVER_URL: ${{ vars.CAPACITOR_SERVER_URL }}
+      run: |
+        test -n "$CAPACITOR_SERVER_URL" || {
+          echo "Configure the CAPACITOR_SERVER_URL repository variable with the deployed Next.js URL."
+          exit 1
+        }
+        node <<'NODE'
+        const fs = require('node:fs');
+        const url = process.env.CAPACITOR_SERVER_URL;
+        const config = JSON.parse(fs.readFileSync('capacitor.config.json', 'utf8'));
+        config.server = { ...config.server, url };
+        fs.writeFileSync('capacitor.config.json', `${JSON.stringify(config, null, 2)}\n`);
+        fs.writeFileSync('.next/index.html', `<!doctype html><html><body><script>location.replace(${JSON.stringify(url)});</script></body></html>`);
+        NODE
+      
+    - name: Generate Android project
+      run: npx cap add android
+      
+    - name: Sync Capacitor
+      run: npx cap sync android
+      
+    - name: Generate Keystore
+      env:
+        ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      run: |
+        test -n "$ANDROID_KEYSTORE_BASE64" || {
+          echo "Configure the ANDROID_KEYSTORE_BASE64 repository secret."
+          exit 1
+        }
+        printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > release.keystore
+
+    - name: Build APK
+      env:
+        ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      run: |
+        test -n "$ANDROID_KEYSTORE_PASSWORD"
+        test -n "$ANDROID_KEY_ALIAS"
+        test -n "$ANDROID_KEY_PASSWORD"
+        npx cap build android \
+          --androidreleasetype APK \
+          --keystorepath release.keystore \
+          --keystorepass "$ANDROID_KEYSTORE_PASSWORD" \
+          --keystorealias "$ANDROID_KEY_ALIAS" \
+          --keystorealiaspass "$ANDROID_KEY_PASSWORD"
+        
+    - name: Upload APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: app-release
+        path: android/app/build/outputs/apk/release/app-release.apk
+        retention-days: 30
+        
+    - name: Create Release
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      uses: softprops/action-gh-release@v1
+      with:
+        files: android/app/build/outputs/apk/release/app-release.apk
+        tag_name: v${{ github.run_number }}
+        name: Release v${{ github.run_number }}
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

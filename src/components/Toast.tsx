@@ -8,19 +8,20 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { CheckCircle2, AlertCircle, Info, X } from "lucide-react";
+import { CheckCircle2, AlertCircle, Info, X, Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type ToastKind = "success" | "error" | "info";
+type ToastKind = "success" | "error" | "info" | "notification";
 
 interface ToastItem {
   id: number;
   kind: ToastKind;
   message: string;
+  title?: string;
 }
 
 interface ToastContextValue {
-  show: (message: string, kind?: ToastKind) => void;
+  show: (message: string, kind?: ToastKind, title?: string) => void;
 }
 
 const ToastContext = createContext<ToastContextValue | null>(null);
@@ -30,9 +31,9 @@ let counter = 0;
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<ToastItem[]>([]);
 
-  const show = useCallback((message: string, kind: ToastKind = "info") => {
+  const show = useCallback((message: string, kind: ToastKind = "info", title?: string) => {
     const id = ++counter;
-    setItems((prev) => [...prev, { id, kind, message }]);
+    setItems((prev) => [...prev, { id, kind, message, title }]);
     setTimeout(() => {
       setItems((prev) => prev.filter((i) => i.id !== id));
     }, 4500);
@@ -56,13 +57,18 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               item.kind === "success" && "border-brand-200 bg-brand-50 text-brand-900",
               item.kind === "error" && "border-red-200 bg-red-50 text-red-900",
               item.kind === "info" && "border-teal-200 bg-teal-50 text-teal-900",
+              item.kind === "notification" && "border-blue-200 bg-blue-50 text-blue-900",
             )}
             role="status"
           >
             {item.kind === "success" && <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />}
             {item.kind === "error" && <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />}
             {item.kind === "info" && <Info className="mt-0.5 h-5 w-5 shrink-0" />}
-            <p className="flex-1 text-sm font-medium leading-snug">{item.message}</p>
+            {item.kind === "notification" && <Bell className="mt-0.5 h-5 w-5 shrink-0" />}
+            <div className="flex-1">
+              {item.title && <p className="text-sm font-bold leading-tight mb-1">{item.title}</p>}
+              <p className="text-sm font-medium leading-snug">{item.message}</p>
+            </div>
             <button
               onClick={() => dismiss(item.id)}
               className="shrink-0 rounded-full p-1 opacity-60 hover:opacity-100"

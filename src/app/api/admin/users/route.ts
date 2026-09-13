@@ -18,6 +18,8 @@ export async function GET() {
         role: profiles.role,
         pontosTotais: profiles.pontosTotais,
         walletAddress: profiles.walletAddress,
+        ativo: profiles.ativo,
+        motivoBanimento: profiles.motivoBanimento,
         createdAt: profiles.createdAt,
       })
       .from(profiles)

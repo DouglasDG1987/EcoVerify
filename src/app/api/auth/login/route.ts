@@ -30,6 +30,13 @@ export async function POST(request: Request) {
       );
     }
 
+    if (!found.ativo) {
+      return Response.json(
+        { ok: false, error: "Esta conta foi banida. Entre em contato com o administrador." },
+        { status: 403 },
+      );
+    }
+
     const valid = await verifyPassword(senha, found.passwordHash);
     if (!valid) {
       return Response.json(

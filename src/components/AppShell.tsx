@@ -13,12 +13,14 @@ import {
   Settings,
   LogOut,
   Menu,
+  Bell,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useSettings } from "@/lib/settings-context";
 import { cn } from "@/lib/utils";
 import type { Role } from "@/lib/types";
+import { useNotifications } from "@/lib/useNotifications";
 
 interface NavItem {
   href: string;
@@ -33,6 +35,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/ranking", labelKey: "nav.ranking", icon: Trophy, roles: ["citizen", "moderator", "admin"] },
   { href: "/moderation", labelKey: "nav.moderation", icon: ShieldCheck, roles: ["moderator", "admin"] },
   { href: "/admin", labelKey: "nav.admin", icon: LayoutDashboard, roles: ["admin"] },
+  { href: "/notifications", labelKey: "nav.notifications", icon: Bell, roles: ["citizen", "moderator", "admin"] },
   { href: "/profile", labelKey: "nav.profile", icon: User, roles: ["citizen", "moderator", "admin"] },
   { href: "/settings", labelKey: "nav.settings", icon: Settings, roles: ["citizen", "moderator", "admin"] },
 ];
@@ -43,6 +46,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { unreadCount } = useNotifications();
 
   const items = NAV_ITEMS.filter((item) => !user || item.roles.includes(user.role));
   const bottomItems = items.slice(0, 5);
@@ -77,7 +81,14 @@ export function AppShell({ children }: { children: ReactNode }) {
                     : "text-stone-600 hover:bg-stone-100 hover:text-stone-900",
                 )}
               >
-                <Icon className="h-5 w-5" />
+                <div className="relative">
+                  <Icon className="h-5 w-5" />
+                  {item.href === "/notifications" && unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+                      {unreadCount > 9 ? "9+" : unreadCount}
+                    </span>
+                  )}
+                </div>
                 {t(item.labelKey)}
               </Link>
             );
@@ -139,7 +150,14 @@ export function AppShell({ children }: { children: ReactNode }) {
                     onClick={() => setMobileMenuOpen(false)}
                     className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-stone-600 hover:bg-stone-100"
                   >
-                    <Icon className="h-5 w-5" />
+                    <div className="relative">
+                      <Icon className="h-5 w-5" />
+                      {item.href === "/notifications" && unreadCount > 0 && (
+                        <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+                          {unreadCount > 9 ? "9+" : unreadCount}
+                        </span>
+                      )}
+                    </div>
                     {t(item.labelKey)}
                   </Link>
                 );
@@ -174,7 +192,14 @@ export function AppShell({ children }: { children: ReactNode }) {
                 active ? "text-brand-600" : "text-stone-500",
               )}
             >
-              <Icon className="h-5 w-5" />
+              <div className="relative">
+                <Icon className="h-5 w-5" />
+                {item.href === "/notifications" && unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
+              </div>
               {t(item.labelKey)}
             </Link>
           );
