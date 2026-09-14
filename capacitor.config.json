@@ -13,9 +13,6 @@
     }
   },
   "android": {
-    "buildOptions": {
-      "keystorePath": "release.keystore",
-      "keystoreAlias": "upload"
-    }
+    "buildOptions": {}
   }
 }
