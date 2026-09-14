@@ -35,7 +35,7 @@ jobs:
           java-version: '17'
 
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
 
       # DATABASE_URL é necessária durante o next build
       - name: Build Next.js
