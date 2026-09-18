@@ -1,0 +1,210 @@
+export type Lang = "pt" | "en" | "es";
+
+export const LANGS: { value: Lang; label: string; flag: string }[] = [
+  { value: "pt", label: "Português", flag: "🇧🇷" },
+  { value: "en", label: "English", flag: "🇺🇸" },
+  { value: "es", label: "Español", flag: "🇪🇸" },
+];
+
+const dict = {
+  appName: { pt: "EcoVerify", en: "EcoVerify", es: "EcoVerify" },
+  tagline: {
+    pt: "Suas ações sustentáveis, reconhecidas e recompensadas.",
+    en: "Your sustainable actions, recognized and rewarded.",
+    es: "Tus acciones sostenibles, reconocidas y recompensadas.",
+  },
+  nav_missions: { pt: "Missões", en: "Missions", es: "Misiones" },
+  nav_submissions: { pt: "Minhas Submissões", en: "My Submissions", es: "Mis Envíos" },
+  nav_ranking: { pt: "Ranking", en: "Ranking", es: "Clasificación" },
+  nav_moderation: { pt: "Moderação", en: "Moderation", es: "Moderación" },
+  nav_admin: { pt: "Admin", en: "Admin", es: "Admin" },
+  nav_notifications: { pt: "Notificações", en: "Notifications", es: "Notificaciones" },
+  nav_profile: { pt: "Perfil", en: "Profile", es: "Perfil" },
+  nav_settings: { pt: "Configurações", en: "Settings", es: "Configuración" },
+  nav_logout: { pt: "Sair", en: "Log out", es: "Salir" },
+  login_title: { pt: "Entrar", en: "Sign in", es: "Iniciar sesión" },
+  login_email: { pt: "E-mail", en: "Email", es: "Correo" },
+  login_password: { pt: "Senha", en: "Password", es: "Contraseña" },
+  login_submit: { pt: "Entrar", en: "Sign in", es: "Entrar" },
+  login_no_account: { pt: "Não tem conta?", en: "Don't have an account?", es: "¿No tienes cuenta?" },
+  login_create_account: { pt: "Criar conta", en: "Create account", es: "Crear cuenta" },
+  login_error: {
+    pt: "E-mail ou senha inválidos.",
+    en: "Invalid email or password.",
+    es: "Correo o contraseña inválidos.",
+  },
+  banned_error: {
+    pt: "Sua conta foi banida da plataforma.",
+    en: "Your account has been banned from the platform.",
+    es: "Tu cuenta ha sido bloqueada de la plataforma.",
+  },
+  register_title: { pt: "Criar conta", en: "Create account", es: "Crear cuenta" },
+  register_name: { pt: "Nome completo", en: "Full name", es: "Nombre completo" },
+  register_submit: { pt: "Criar conta", en: "Create account", es: "Crear cuenta" },
+  register_has_account: { pt: "Já tem conta?", en: "Already have an account?", es: "¿Ya tienes cuenta?" },
+  register_login: { pt: "Entrar", en: "Sign in", es: "Iniciar sesión" },
+  register_password_hint: {
+    pt: "Mínimo de 6 caracteres.",
+    en: "Minimum 6 characters.",
+    es: "Mínimo 6 caracteres.",
+  },
+  register_email_exists: {
+    pt: "Este e-mail já está cadastrado.",
+    en: "This email is already registered.",
+    es: "Este correo ya está registrado.",
+  },
+  wallet_title: { pt: "Configure sua carteira FONE", en: "Set up your FONE wallet", es: "Configura tu billetera FONE" },
+  wallet_subtitle: {
+    pt: "É para lá que suas recompensas em FONE vão. Você pode criar uma carteira nova ou importar uma já existente.",
+    en: "That's where your FONE rewards go. You can create a new wallet or import an existing one.",
+    es: "Ahí es donde van tus recompensas en FONE. Puedes crear una billetera nueva o importar una existente.",
+  },
+  wallet_create: { pt: "Criar carteira nova", en: "Create new wallet", es: "Crear billetera nueva" },
+  wallet_import: { pt: "Já tenho uma carteira", en: "I already have a wallet", es: "Ya tengo una billetera" },
+  wallet_address_placeholder: {
+    pt: "Cole o endereço da sua carteira",
+    en: "Paste your wallet address",
+    es: "Pega la dirección de tu billetera",
+  },
+  wallet_skip: { pt: "Pular por agora", en: "Skip for now", es: "Omitir por ahora" },
+  wallet_continue: { pt: "Continuar", en: "Continue", es: "Continuar" },
+  missions_title: { pt: "Missões", en: "Missions", es: "Misiones" },
+  missions_subtitle: {
+    pt: "Escolha uma missão, realize a ação no mundo real e envie sua comprovação.",
+    en: "Choose a mission, complete it in the real world, and send your proof.",
+    es: "Elige una misión, realízala en el mundo real y envía tu comprobante.",
+  },
+  missions_empty: {
+    pt: "Nenhuma missão disponível no momento.",
+    en: "No missions available right now.",
+    es: "No hay misiones disponibles en este momento.",
+  },
+  send_proof: { pt: "Enviar comprovação", en: "Send proof", es: "Enviar comprobante" },
+  cancel: { pt: "Cancelar", en: "Cancel", es: "Cancelar" },
+  send: { pt: "Enviar", en: "Send", es: "Enviar" },
+  save: { pt: "Salvar", en: "Save", es: "Guardar" },
+  close: { pt: "Fechar", en: "Close", es: "Cerrar" },
+  photo_tap: {
+    pt: "Toque para tirar ou escolher uma foto",
+    en: "Tap to take or choose a photo",
+    es: "Toca para tomar o elegir una foto",
+  },
+  report_label: { pt: "Relato", en: "Report", es: "Relato" },
+  use_current_location: {
+    pt: "Usar minha localização atual",
+    en: "Use my current location",
+    es: "Usar mi ubicación actual",
+  },
+  submission_success: { pt: "Comprovação enviada!", en: "Proof submitted!", es: "¡Comprobante enviado!" },
+  my_submissions_title: { pt: "Minhas Submissões", en: "My Submissions", es: "Mis Envíos" },
+  submissions_empty: {
+    pt: "Você ainda não enviou nenhuma comprovação.",
+    en: "You haven't submitted any proof yet.",
+    es: "Aún no has enviado ningún comprobante.",
+  },
+  status_pending: { pt: "Pendente", en: "Pending", es: "Pendiente" },
+  status_approved: { pt: "Aprovada", en: "Approved", es: "Aprobada" },
+  status_rejected: { pt: "Rejeitada", en: "Rejected", es: "Rechazada" },
+  ranking_title: { pt: "Ranking", en: "Ranking", es: "Clasificación" },
+  ranking_subtitle: {
+    pt: "Os maiores guardiões do planeta na nossa comunidade.",
+    en: "The greatest guardians of the planet in our community.",
+    es: "Los mayores guardianes del planeta en nuestra comunidad.",
+  },
+  points: { pt: "pontos", en: "points", es: "puntos" },
+  notifications_title: { pt: "Notificações", en: "Notifications", es: "Notificaciones" },
+  notifications_empty: {
+    pt: "Nenhuma notificação encontrada.",
+    en: "No notifications found.",
+    es: "No se encontraron notificaciones.",
+  },
+  new_label: { pt: "NOVA", en: "NEW", es: "NUEVA" },
+  moderation_title: { pt: "Moderação", en: "Moderation", es: "Moderación" },
+  moderation_subtitle: {
+    pt: "Revise as comprovações enviadas pela comunidade.",
+    en: "Review proofs submitted by the community.",
+    es: "Revisa los comprobantes enviados por la comunidad.",
+  },
+  moderation_empty: {
+    pt: "Nenhuma comprovação pendente.",
+    en: "No pending proofs.",
+    es: "No hay comprobantes pendientes.",
+  },
+  approve: { pt: "Aprovar", en: "Approve", es: "Aprobar" },
+  reject: { pt: "Rejeitar", en: "Reject", es: "Rechazar" },
+  own_submission_warning: {
+    pt: "Você não pode moderar sua própria submissão.",
+    en: "You cannot moderate your own submission.",
+    es: "No puedes moderar tu propio envío.",
+  },
+  rejection_reason_title: { pt: "Motivo da rejeição", en: "Rejection reason", es: "Motivo del rechazo" },
+  confirm_rejection: { pt: "Confirmar rejeição", en: "Confirm rejection", es: "Confirmar rechazo" },
+  user_history_title: { pt: "Histórico", en: "History", es: "Historial" },
+  admin_title: { pt: "Painel Administrativo", en: "Admin Panel", es: "Panel Administrativo" },
+  admin_tab_metrics: { pt: "Métricas", en: "Metrics", es: "Métricas" },
+  admin_tab_missions: { pt: "Missões", en: "Missions", es: "Misiones" },
+  admin_tab_users: { pt: "Usuários", en: "Users", es: "Usuarios" },
+  admin_tab_rewards: { pt: "Recompensas", en: "Rewards", es: "Recompensas" },
+  profile_title: { pt: "Perfil", en: "Profile", es: "Perfil" },
+  settings_title: { pt: "Configurações", en: "Settings", es: "Configuración" },
+  settings_language: { pt: "Idioma", en: "Language", es: "Idioma" },
+  settings_font_size: { pt: "Tamanho da fonte", en: "Font size", es: "Tamaño de fuente" },
+  settings_high_contrast: { pt: "Alto contraste", en: "High contrast", es: "Alto contraste" },
+  settings_reduced_motion: {
+    pt: "Reduzir movimento/animações",
+    en: "Reduce motion/animations",
+    es: "Reducir movimiento/animaciones",
+  },
+  settings_notifications: { pt: "Notificações", en: "Notifications", es: "Notificaciones" },
+  font_small: { pt: "Pequeno", en: "Small", es: "Pequeño" },
+  font_medium: { pt: "Médio", en: "Medium", es: "Medio" },
+  font_large: { pt: "Grande", en: "Large", es: "Grande" },
+  error_photo_required: {
+    pt: "É necessário enviar uma foto como comprovação.",
+    en: "You must upload a photo as proof.",
+    es: "Debes enviar una foto como comprobante.",
+  },
+  error_report_length: {
+    pt: "O relato deve ter entre 50 e 1000 caracteres.",
+    en: "The report must be between 50 and 1000 characters.",
+    es: "El relato debe tener entre 50 y 1000 caracteres.",
+  },
+  error_daily_limit: {
+    pt: "Você atingiu o limite de 5 comprovações por dia.",
+    en: "You have reached the daily limit of 5 submissions.",
+    es: "Has alcanzado el límite de 5 comprobantes por día.",
+  },
+  error_duplicate_photo: {
+    pt: "Esta foto já foi usada em outra comprovação.",
+    en: "This photo has already been used in another submission.",
+    es: "Esta foto ya fue usada en otro comprobante.",
+  },
+  error_generic: {
+    pt: "Algo deu errado. Tente novamente.",
+    en: "Something went wrong. Please try again.",
+    es: "Algo salió mal. Inténtalo de nuevo.",
+  },
+  reward_points: { pt: "pts", en: "pts", es: "pts" },
+} as const;
+
+export type DictKey = keyof typeof dict;
+
+export function t(lang: Lang, key: DictKey): string {
+  return dict[key]?.[lang] ?? dict[key]?.pt ?? String(key);
+}
+
+export const categoryLabels: Record<string, Record<Lang, string>> = {
+  planting: { pt: "Plantio", en: "Planting", es: "Plantación" },
+  donation: { pt: "Doação", en: "Donation", es: "Donación" },
+  recycling: { pt: "Reciclagem", en: "Recycling", es: "Reciclaje" },
+  cleanup: { pt: "Mutirão de limpeza", en: "Cleanup drive", es: "Jornada de limpieza" },
+  other: { pt: "Outro", en: "Other", es: "Otro" },
+};
+
+export const categoryEmoji: Record<string, string> = {
+  planting: "🌳",
+  donation: "🤝",
+  recycling: "♻️",
+  cleanup: "🧹",
+  other: "🌱",
+};
