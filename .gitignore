@@ -24,6 +24,14 @@ yarn-error.log*
 
 # Local env files
 .env*.local
+.env
+
+# Android
+android/.gradle/
+android/app/build/
+android/app/release.keystore
+android/local.properties
+android/capacitor-cordova-android-plugins/
 
 # Vercel
 .vercel

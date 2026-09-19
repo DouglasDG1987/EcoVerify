@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">EcoVerify</string>
+    <string name="title_activity_main">EcoVerify</string>
+    <string name="package_name">com.ecoverify.app</string>
+    <string name="custom_url_scheme">com.ecoverify.app</string>
+</resources>
