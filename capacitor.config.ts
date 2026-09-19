@@ -4,7 +4,6 @@ const config: CapacitorConfig = {
   appId: 'com.ecoverify.app',
   appName: 'EcoVerify',
   webDir: 'public',
-  bundledWebRuntime: false,
   server: {
     androidScheme: 'https',
     // Configure your production URL here when deploying
