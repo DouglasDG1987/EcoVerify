@@ -18,7 +18,7 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '20'
+        node-version: '22'
         cache: 'npm'
         
     - name: Install dependencies
@@ -33,10 +33,7 @@ jobs:
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
       with:
-        packages: |
-          platform-tools
-          platforms;android-34
-          build-tools;34.0.0
+        packages: 'platform-tools platforms;android-34 build-tools;34.0.0'
         accept-android-sdk-licenses: true
       
     - name: Make gradlew executable
@@ -44,6 +41,9 @@ jobs:
       
     - name: Sync Capacitor
       run: npx cap sync android
+      env:
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        CAPACITOR_SERVER_URL: ${{ secrets.CAPACITOR_SERVER_URL }}
       
     - name: Build debug APK
       run: |
