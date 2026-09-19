@@ -65,3 +65,30 @@ jobs:
         name: ecoverify-release
         path: android/app/build/outputs/apk/release/app-release.apk
         retention-days: 30
+        
+    - name: Create GitHub Release
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: v${{ github.run_number }}
+        name: EcoVerify Android APK v${{ github.run_number }}
+        body: |
+          ## EcoVerify Android APK
+          
+          ### Debug APK
+          📱 [Download Debug APK](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          
+          ### Installation
+          1. Download the APK file
+          2. Enable "Install from unknown sources" on your Android device
+          3. Open the APK file to install
+          
+          ### Notes
+          - Debug APK is for testing purposes
+          - Release APK (if available) is signed and ready for distribution
+        files: |
+          android/app/build/outputs/apk/debug/app-debug.apk
+        draft: false
+        prerelease: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
