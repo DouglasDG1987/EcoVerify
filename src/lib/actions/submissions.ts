@@ -79,8 +79,8 @@ export async function createSubmissionAction(
     photoUrl,
     photoHash,
     report,
-    latitude: latitude ? String(latitude) : null,
-    longitude: longitude ? String(longitude) : null,
+    latitude: latitude ? Number(latitude) : null,
+    longitude: longitude ? Number(longitude) : null,
   });
 
   revalidatePath("/submissions");
