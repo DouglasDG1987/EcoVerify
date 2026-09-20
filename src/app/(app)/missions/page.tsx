@@ -1,16 +1,34 @@
-import { eq } from "drizzle-orm";
+import { eq, and, not, inArray } from "drizzle-orm";
 import { db } from "@/db";
-import { missions } from "@/db/schema";
+import { missions, submissions } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { t } from "@/lib/i18n";
 import { MissionCard } from "@/components/missions/mission-card";
+import { Sprout } from "@/components/ui/icons";
 
 export default async function MissionsPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
-  const activeMissions = await db.select().from(missions).where(eq(missions.isActive, true));
+  const userSubmissions = await db
+    .select({ missionId: submissions.missionId })
+    .from(submissions)
+    .where(eq(submissions.userId, user.id));
+
+  const completedMissionIds = userSubmissions.map((s) => s.missionId);
+
+  const activeMissions = await db
+    .select()
+    .from(missions)
+    .where(
+      and(
+        eq(missions.isActive, true),
+        completedMissionIds.length > 0
+          ? not(inArray(missions.id, completedMissionIds))
+          : undefined
+      )
+    );
 
   return (
     <div>
@@ -19,7 +37,7 @@ export default async function MissionsPage() {
 
       {activeMissions.length === 0 ? (
         <div className="mt-10 rounded-2xl border border-dashed border-slate-200 bg-white p-12 text-center text-slate-400">
-          <p className="text-4xl">🌱</p>
+          <Sprout className="h-16 w-16 mx-auto" />
           <p className="mt-3 text-sm font-medium">{t(user.language, "missions_empty")}</p>
         </div>
       ) : (
@@ -31,7 +49,11 @@ export default async function MissionsPage() {
               mission={{
                 id: mission.id,
                 title: mission.title,
+                titleEn: mission.titleEn,
+                titleEs: mission.titleEs,
                 description: mission.description,
+                descriptionEn: mission.descriptionEn,
+                descriptionEs: mission.descriptionEs,
                 category: mission.category,
                 pointsReward: mission.pointsReward,
                 foneReward: mission.foneReward,

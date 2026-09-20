@@ -5,6 +5,7 @@ import { notifications } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth";
 import { t } from "@/lib/i18n";
 import { NotificationItem } from "@/components/notifications/notification-item";
+import { Bell } from "@/components/ui/icons";
 
 export default async function NotificationsPage() {
   const user = await getCurrentUser();
@@ -22,7 +23,7 @@ export default async function NotificationsPage() {
 
       {rows.length === 0 ? (
         <div className="mt-10 rounded-2xl border border-dashed border-slate-200 bg-white p-12 text-center text-slate-400">
-          <p className="text-4xl">🔔</p>
+          <Bell className="h-16 w-16 mx-auto" />
           <p className="mt-3 text-sm font-medium">{t(user.language, "notifications_empty")}</p>
         </div>
       ) : (

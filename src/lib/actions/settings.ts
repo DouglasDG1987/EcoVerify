@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth";
+import { headers } from "next/headers";
 import type { ActionState } from "@/lib/actions/auth";
 
 export async function updateSettingsAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
@@ -24,5 +25,10 @@ export async function updateSettingsAction(_prev: ActionState, formData: FormDat
     .where(eq(users.id, user.id));
 
   revalidatePath("/", "layout");
-  return {};
+
+  // Get the current path to redirect back to the same page
+  const headersList = await headers();
+  const referer = headersList.get("referer") || "/settings";
+  const url = new URL(referer);
+  redirect(url.pathname);
 }

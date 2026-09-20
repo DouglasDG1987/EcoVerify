@@ -22,7 +22,11 @@ export async function createMissionAction(
 ): Promise<AdminActionState> {
   const admin = await assertAdmin();
   const title = String(formData.get("title") ?? "").trim();
+  const titleEn = String(formData.get("titleEn") ?? "").trim() || null;
+  const titleEs = String(formData.get("titleEs") ?? "").trim() || null;
   const description = String(formData.get("description") ?? "").trim();
+  const descriptionEn = String(formData.get("descriptionEn") ?? "").trim() || null;
+  const descriptionEs = String(formData.get("descriptionEs") ?? "").trim() || null;
   const category = String(formData.get("category") ?? "other") as
     | "planting"
     | "donation"
@@ -38,7 +42,11 @@ export async function createMissionAction(
 
   await db.insert(missions).values({
     title,
+    titleEn,
+    titleEs,
     description,
+    descriptionEn,
+    descriptionEs,
     category,
     pointsReward,
     foneReward,

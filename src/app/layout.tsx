@@ -26,7 +26,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
 
   return (
     <html lang="pt-BR" className={classes}>
-      <body className={`${inter.variable} font-sans antialiased bg-[#f7f8f7] text-slate-900`}>
+      <body className={`${inter.variable} font-sans antialiased bg-[#f7f8f7] text-slate-900`} suppressHydrationWarning>
         {children}
       </body>
     </html>

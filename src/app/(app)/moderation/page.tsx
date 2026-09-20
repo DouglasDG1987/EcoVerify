@@ -5,6 +5,7 @@ import { missions, submissions, users } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth";
 import { t } from "@/lib/i18n";
 import { ModerationCard } from "@/components/moderation/moderation-card";
+import { Shield } from "@/components/ui/icons";
 
 export default async function ModerationPage() {
   const user = await getCurrentUser();
@@ -37,7 +38,7 @@ export default async function ModerationPage() {
 
       {rows.length === 0 ? (
         <div className="mt-10 rounded-2xl border border-dashed border-slate-200 bg-white p-12 text-center text-slate-400">
-          <p className="text-4xl">🛡️</p>
+          <Shield className="h-16 w-16 mx-auto" />
           <p className="mt-3 text-sm font-medium">{t(user.language, "moderation_empty")}</p>
         </div>
       ) : (

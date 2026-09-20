@@ -67,7 +67,11 @@ export const sessions = pgTable("sessions", {
 export const missions = pgTable("missions", {
   id: uuid("id").defaultRandom().primaryKey(),
   title: varchar("title", { length: 200 }).notNull(),
+  titleEn: varchar("title_en", { length: 200 }),
+  titleEs: varchar("title_es", { length: 200 }),
   description: text("description").notNull(),
+  descriptionEn: text("description_en"),
+  descriptionEs: text("description_es"),
   category: categoryEnum("category").notNull(),
   pointsReward: integer("points_reward").notNull(),
   foneReward: numeric("fone_reward", { precision: 12, scale: 2 }).notNull(),
@@ -133,5 +137,48 @@ export const notifications = pgTable("notifications", {
   title: varchar("title", { length: 200 }).notNull(),
   message: text("message").notNull(),
   isRead: boolean("is_read").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const messageTypeEnum = pgEnum("message_type", ["text", "image", "audio", "video", "gif"]);
+
+export const communityChat = pgTable("community_chat", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  message: text("message"),
+  messageType: messageTypeEnum("message_type").default("text").notNull(),
+  mediaUrl: text("media_url"),
+  replyToId: uuid("reply_to_id").references(() => communityChat.id),
+  replyToMessage: text("reply_to_message"),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  editedAt: timestamp("edited_at", { withTimezone: true }),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  deletedBy: uuid("deleted_by").references(() => users.id),
+  deleteForEveryone: boolean("delete_for_everyone").default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const messageFavorites = pgTable("message_favorites", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  messageId: uuid("message_id")
+    .notNull()
+    .references(() => communityChat.id, { onDelete: "cascade" }),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const messageReports = pgTable("message_reports", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  messageId: uuid("message_id")
+    .notNull()
+    .references(() => communityChat.id, { onDelete: "cascade" }),
+  reporterId: uuid("reporter_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  reason: varchar("reason", { length: 200 }).notNull(),
+  status: varchar("status", { length: 20 }).default("pending").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

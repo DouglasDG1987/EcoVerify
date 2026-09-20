@@ -33,6 +33,10 @@ export function SettingsForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pending]);
 
+  const handleLanguageChange = (newLang: Lang) => {
+    setLang(newLang);
+  };
+
   return (
     <form action={formAction} className="space-y-6 rounded-3xl border border-black/5 bg-white p-6 shadow-sm">
       <div>
@@ -50,7 +54,7 @@ export function SettingsForm({
                 name="language"
                 value={l.value}
                 defaultChecked={language === l.value}
-                onChange={() => setLang(l.value)}
+                onChange={() => handleLanguageChange(l.value)}
                 className="accent-emerald-600"
               />
               {l.flag} {l.label}

@@ -5,6 +5,7 @@ import { missions, submissions } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth";
 import { t } from "@/lib/i18n";
 import { SubmissionCard } from "@/components/submissions/submission-card";
+import { FileText } from "@/components/ui/icons";
 
 export default async function SubmissionsPage() {
   const user = await getCurrentUser();
@@ -32,7 +33,7 @@ export default async function SubmissionsPage() {
 
       {rows.length === 0 ? (
         <div className="mt-10 rounded-2xl border border-dashed border-slate-200 bg-white p-12 text-center text-slate-400">
-          <p className="text-4xl">📋</p>
+          <FileText className="h-16 w-16 mx-auto" />
           <p className="mt-3 text-sm font-medium">{t(user.language, "submissions_empty")}</p>
         </div>
       ) : (

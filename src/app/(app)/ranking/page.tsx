@@ -5,8 +5,9 @@ import { users } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth";
 import { t } from "@/lib/i18n";
 import { initials } from "@/lib/utils";
+import { Trophy, Medal } from "@/components/ui/icons";
 
-const medals = ["🥇", "🥈", "🥉"];
+const medals = [<Medal className="h-6 w-6 text-amber-400" />, <Medal className="h-6 w-6 text-slate-400" />, <Medal className="h-6 w-6 text-amber-600" />];
 
 export default async function RankingPage() {
   const user = await getCurrentUser();
@@ -22,7 +23,7 @@ export default async function RankingPage() {
   return (
     <div>
       <div className="flex items-center gap-3">
-        <span className="text-3xl">🏆</span>
+        <Trophy className="h-8 w-8 text-amber-500" />
         <div>
           <h1 className="text-2xl font-bold text-slate-900 md:text-3xl">{t(user.language, "ranking_title")}</h1>
           <p className="text-sm text-slate-500">{t(user.language, "ranking_subtitle")}</p>
@@ -43,7 +44,7 @@ export default async function RankingPage() {
               } ${isMe ? "ring-2 ring-emerald-400" : ""}`}
             >
               <div className="grid h-10 w-10 shrink-0 place-items-center text-xl font-bold text-slate-500">
-                {isPodium ? <span className="text-2xl">{medals[index]}</span> : index + 1}
+                {isPodium ? medals[index] : index + 1}
               </div>
               <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 text-sm font-bold text-white">
                 {initials(row.name)}

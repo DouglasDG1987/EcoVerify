@@ -8,6 +8,7 @@ import { NAV_ITEMS, MOBILE_PRIMARY_HREFS, type Role } from "@/lib/nav";
 import { t, type Lang } from "@/lib/i18n";
 import { initials } from "@/lib/utils";
 import { logoutAction } from "@/lib/actions/auth";
+import { LogOut, Menu, X } from "@/components/ui/icons";
 
 type ShellUser = {
   name: string;
@@ -54,7 +55,7 @@ export function AppShell({
                   : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
               }`}
             >
-              <span className="text-lg">{item.icon}</span>
+              <item.icon className="h-5 w-5" />
               <span className="flex-1">{t(lang, item.labelKey)}</span>
               {item.href === "/notifications" && unreadCount > 0 && (
                 <span className="rounded-full bg-red-500 px-2 py-0.5 text-xs font-bold text-white">
@@ -79,7 +80,7 @@ export function AppShell({
               type="submit"
               className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-red-50 hover:text-red-600 hover:border-red-200"
             >
-              <span>🚪</span> {t(lang, "nav_logout")}
+              <LogOut className="h-4 w-4" /> {t(lang, "nav_logout")}
             </button>
           </form>
         </div>
@@ -95,9 +96,9 @@ export function AppShell({
           type="button"
           aria-label="menu"
           onClick={() => setDrawerOpen(true)}
-          className="grid h-10 w-10 place-items-center rounded-xl text-2xl text-slate-700 hover:bg-slate-100"
+          className="grid h-10 w-10 place-items-center rounded-xl text-slate-700 hover:bg-slate-100"
         >
-          ☰
+          <Menu className="h-6 w-6" />
         </button>
       </header>
 
@@ -114,9 +115,9 @@ export function AppShell({
               <button
                 type="button"
                 onClick={() => setDrawerOpen(false)}
-                className="grid h-9 w-9 place-items-center rounded-full text-xl text-slate-500 hover:bg-slate-100"
+                className="grid h-9 w-9 place-items-center rounded-full text-slate-500 hover:bg-slate-100"
               >
-                ✕
+                <X className="h-5 w-5" />
               </button>
             </div>
             <div className="mb-4 flex items-center gap-3 rounded-xl bg-slate-50 p-3">
@@ -138,7 +139,7 @@ export function AppShell({
                     isActive(item.href) ? "bg-emerald-50 text-emerald-700" : "text-slate-600 hover:bg-slate-50"
                   }`}
                 >
-                  <span className="text-lg">{item.icon}</span>
+                  <item.icon className="h-5 w-5" />
                   <span className="flex-1">{t(lang, item.labelKey)}</span>
                   {item.href === "/notifications" && unreadCount > 0 && (
                     <span className="rounded-full bg-red-500 px-2 py-0.5 text-xs font-bold text-white">
@@ -153,7 +154,7 @@ export function AppShell({
                 type="submit"
                 className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-red-50 hover:text-red-600 hover:border-red-200"
               >
-                <span>🚪</span> {t(lang, "nav_logout")}
+                <LogOut className="h-4 w-4" /> {t(lang, "nav_logout")}
               </button>
             </form>
           </div>
@@ -175,7 +176,7 @@ export function AppShell({
               isActive(item.href) ? "text-emerald-600" : "text-slate-500"
             }`}
           >
-            <span className="text-xl">{item.icon}</span>
+            <item.icon className="h-6 w-6" />
             {item.href === "/notifications" && unreadCount > 0 && (
               <span className="absolute right-5 top-1 h-2 w-2 rounded-full bg-red-500" />
             )}
@@ -187,7 +188,7 @@ export function AppShell({
           onClick={() => setDrawerOpen(true)}
           className="flex flex-1 flex-col items-center gap-0.5 py-2.5 text-xs font-medium text-slate-500"
         >
-          <span className="text-xl">☰</span>
+          <Menu className="h-6 w-6" />
           <span>{moreItems.length > 0 ? "Mais" : ""}</span>
         </button>
       </nav>

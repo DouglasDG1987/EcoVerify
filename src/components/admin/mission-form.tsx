@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useRef } from "react";
 import { createMissionAction, type AdminActionState } from "@/lib/actions/admin";
 import { categoryEmoji, categoryLabels } from "@/lib/i18n";
+import { Star, Sprout, Utensils } from "@/components/ui/icons";
 
 const initialState: AdminActionState = {};
 const categories = Object.keys(categoryLabels);
@@ -22,7 +23,7 @@ export function MissionForm() {
       <h3 className="font-bold text-slate-900">Nova missão</h3>
       <form ref={formRef} action={formAction} className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="sm:col-span-2">
-          <label className="mb-1 block text-sm font-medium text-slate-700">Título</label>
+          <label className="mb-1 block text-sm font-medium text-slate-700">Título (Português)</label>
           <input
             name="title"
             required
@@ -30,10 +31,40 @@ export function MissionForm() {
           />
         </div>
         <div className="sm:col-span-2">
-          <label className="mb-1 block text-sm font-medium text-slate-700">Descrição</label>
+          <label className="mb-1 block text-sm font-medium text-slate-700">Título (Inglês)</label>
+          <input
+            name="titleEn"
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+          />
+        </div>
+        <div className="sm:col-span-2">
+          <label className="mb-1 block text-sm font-medium text-slate-700">Título (Espanhol)</label>
+          <input
+            name="titleEs"
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+          />
+        </div>
+        <div className="sm:col-span-2">
+          <label className="mb-1 block text-sm font-medium text-slate-700">Descrição (Português)</label>
           <textarea
             name="description"
             required
+            rows={2}
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+          />
+        </div>
+        <div className="sm:col-span-2">
+          <label className="mb-1 block text-sm font-medium text-slate-700">Descrição (Inglês)</label>
+          <textarea
+            name="descriptionEn"
+            rows={2}
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+          />
+        </div>
+        <div className="sm:col-span-2">
+          <label className="mb-1 block text-sm font-medium text-slate-700">Descrição (Espanhol)</label>
+          <textarea
+            name="descriptionEs"
             rows={2}
             className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
           />
@@ -53,7 +84,9 @@ export function MissionForm() {
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">Pontos (⭐)</label>
+            <label className="mb-1 block text-sm font-medium text-slate-700 flex items-center gap-1">
+              <Star className="h-4 w-4" /> Pontos
+            </label>
             <input
               type="number"
               name="pointsReward"
@@ -64,7 +97,9 @@ export function MissionForm() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">FONE (🪙)</label>
+            <label className="mb-1 block text-sm font-medium text-slate-700 flex items-center gap-1">
+              <Sprout className="h-4 w-4" /> FONE
+            </label>
             <input
               type="number"
               step="0.01"
