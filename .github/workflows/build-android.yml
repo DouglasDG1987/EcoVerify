@@ -2,84 +2,131 @@ name: Build Android APK
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
+
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
+
   workflow_dispatch:
+
+# Permite que o GitHub Actions crie e atualize Releases
+permissions:
+  contents: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '22'
-        cache: 'npm'
-        
-    - name: Install dependencies
-      run: npm ci
-      
-    - name: Setup Java
-      uses: actions/setup-java@v5
-      with:
-        distribution: 'temurin'
-        java-version: '21'
 
-    - name: Setup Android SDK
-      uses: android-actions/setup-android@v3
-      with:
-        packages: 'platform-tools platforms;android-36 build-tools;36.0.0'
-        accept-android-sdk-licenses: true
-      
-    - name: Make gradlew executable
-      run: chmod +x android/gradlew
-      
-    - name: Sync Capacitor
-      run: npx cap sync android
-      env:
-        DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        CAPACITOR_SERVER_URL: ${{ secrets.CAPACITOR_SERVER_URL }}
-      
-    - name: Build debug APK
-      run: |
-        cd android
-        ./gradlew assembleDebug
-        
-    - name: Upload debug APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: ecoverify-debug
-        path: android/app/build/outputs/apk/debug/app-debug.apk
-        retention-days: 30
-        
-    - name: Create GitHub Release
-      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-      uses: softprops/action-gh-release@v1
-      with:
-        tag_name: v${{ github.run_number }}
-        name: EcoVerify Android APK v${{ github.run_number }}
-        body: |
-          ## EcoVerify Android APK
-          
-          ### Debug APK
-          📱 [Download Debug APK](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
-          
-          ### Installation
-          1. Download the APK file
-          2. Enable "Install from unknown sources" on your Android device
-          3. Open the APK file to install
-          
-          ### Notes
-          - Debug APK is for testing purposes
-          - Release APK (if available) is signed and ready for distribution
-        files: |
-          android/app/build/outputs/apk/debug/app-debug.apk
-        draft: false
-        prerelease: true
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      # ==========================================
+      # 1. Checkout
+      # ==========================================
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # ==========================================
+      # 2. Node.js
+      # ==========================================
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      # ==========================================
+      # 3. Instalar dependências
+      # ==========================================
+      - name: Install dependencies
+        run: npm ci
+
+      # ==========================================
+      # 4. Java
+      # ==========================================
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      # ==========================================
+      # 5. Android SDK
+      # ==========================================
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools platforms;android-36 build-tools;36.0.0'
+          accept-android-sdk-licenses: true
+
+      # ==========================================
+      # 6. Permissão do Gradle
+      # ==========================================
+      - name: Make gradlew executable
+        run: chmod +x android/gradlew
+
+      # ==========================================
+      # 7. Sincronizar Capacitor
+      # ==========================================
+      - name: Sync Capacitor
+        run: npx cap sync android
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          CAPACITOR_SERVER_URL: ${{ secrets.CAPACITOR_SERVER_URL }}
+
+      # ==========================================
+      # 8. Build do APK Debug
+      # ==========================================
+      - name: Build debug APK
+        run: |
+          cd android
+          ./gradlew assembleDebug
+
+      # ==========================================
+      # 9. Upload do APK como Artifact
+      # ==========================================
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ecoverify-debug
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
+
+      # ==========================================
+      # 10. Criar GitHub Release
+      # ==========================================
+      - name: Create GitHub Release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ github.run_number }}
+          name: EcoVerify Android APK v${{ github.run_number }}
+
+          body: |
+            ## EcoVerify Android APK
+
+            ### 📱 Debug APK
+
+            APK gerado automaticamente pelo GitHub Actions.
+
+            ### Instalação
+
+            1. Baixe o arquivo `app-debug.apk`
+            2. Transfira o APK para o dispositivo Android
+            3. Permita a instalação de aplicativos desta fonte, se solicitado
+            4. Abra o arquivo APK para instalar
+
+            ### Observações
+
+            - Esta é uma versão Debug para testes.
+            - Esta versão não é destinada à distribuição pela Google Play Store.
+            - Cada execução na branch `main` gera uma nova versão da Release.
+
+          files: |
+            android/app/build/outputs/apk/debug/app-debug.apk
+
+          draft: false
+          prerelease: true
+
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
