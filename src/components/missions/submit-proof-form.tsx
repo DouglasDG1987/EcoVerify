@@ -12,6 +12,8 @@ const errorKeyMap: Record<string, string> = {
   report_length: "error_report_length",
   daily_limit: "error_daily_limit",
   duplicate_photo: "error_duplicate_photo",
+  outside_mission_area: "error_outside_mission_area",
+  mission_location_not_configured: "error_mission_location_not_configured",
 };
 
 export function SubmitProofForm({
@@ -24,6 +26,10 @@ export function SubmitProofForm({
     title: string;
     titleEn?: string | null;
     titleEs?: string | null;
+    context?: string | null;
+    impact?: string | null;
+    latitude: string | null;
+    longitude: string | null;
     category: string;
     pointsReward: number;
     foneReward: string;
@@ -113,6 +119,13 @@ export function SubmitProofForm({
           <input type="hidden" name="latitude" value={coords?.lat ?? ""} readOnly />
           <input type="hidden" name="longitude" value={coords?.lng ?? ""} readOnly />
 
+          {(mission.context || mission.impact) && (
+            <div className="space-y-3 rounded-2xl bg-emerald-50 p-4 text-sm text-slate-700">
+              {mission.context && <p><strong className="text-emerald-800">O que fazer:</strong> {mission.context}</p>}
+              {mission.impact && <p><strong className="text-emerald-800">Por que importa:</strong> {mission.impact}</p>}
+            </div>
+          )}
+
           <div className="space-y-2">
             <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
               <span className="text-lg">📷</span>
@@ -187,7 +200,7 @@ export function SubmitProofForm({
             </button>
             {locationError && (
               <p className="mt-1 text-xs font-medium text-red-500">
-                Não foi possível obter sua localização. Você pode continuar sem ela.
+                É necessário permitir a localização para confirmar que você está no local da missão.
               </p>
             )}
           </div>
@@ -213,7 +226,7 @@ export function SubmitProofForm({
             </button>
             <button
               type="submit"
-              disabled={pending}
+              disabled={pending || !coords}
               className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-70 transition-opacity"
             >
               {pending && (

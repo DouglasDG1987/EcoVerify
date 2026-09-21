@@ -9,6 +9,15 @@ interface GifPickerProps {
   onClose: () => void;
 }
 
+const FALLBACK_GIFS = [
+  { id: "fallback-1", title: "Eco care", images: { fixed_height: { url: "https://media.giphy.com/media/3o7TKtnuHOHHUjR38Y/giphy.gif" } } },
+  { id: "fallback-2", title: "Planet", images: { fixed_height: { url: "https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif" } } },
+  { id: "fallback-3", title: "Reuse", images: { fixed_height: { url: "https://media.giphy.com/media/26BRv0ThflsHCqDrG/giphy.gif" } } },
+  { id: "fallback-4", title: "Cleanup", images: { fixed_height: { url: "https://media.giphy.com/media/3oEduLZ2Lmd9b9e6gQ/giphy.gif" } } },
+  { id: "fallback-5", title: "Nature", images: { fixed_height: { url: "https://media.giphy.com/media/26AHG5KGFxSkUWw1i/giphy.gif" } } },
+  { id: "fallback-6", title: "Sustainability", images: { fixed_height: { url: "https://media.giphy.com/media/3oFzmf7vV8mPhnP5AI/giphy.gif" } } },
+];
+
 export function GifPicker({ lang, onGifSelected, onClose }: GifPickerProps) {
   const [query, setQuery] = useState("");
   const [gifs, setGifs] = useState<any[]>([]);
@@ -17,25 +26,32 @@ export function GifPicker({ lang, onGifSelected, onClose }: GifPickerProps) {
 
   const searchGifs = async (searchQuery: string) => {
     if (!searchQuery.trim()) return;
-    
+
     setLoading(true);
     setError(false);
-    
+
     try {
-      // Usando a API pública do Giphy (note: em produção você deve usar uma API key própria)
-      const response = await fetch(
-        `https://api.giphy.com/v1/gifs/search?api_key=dc6zaTOxFJmzC&q=${encodeURIComponent(searchQuery)}&limit=10&offset=0&rating=g&lang=en`
-      );
-      
+      const apiKey = process.env.NEXT_PUBLIC_GIPHY_API_KEY;
+      const endpoint = apiKey
+        ? `https://api.giphy.com/v1/gifs/search?api_key=${apiKey}&q=${encodeURIComponent(searchQuery)}&limit=10&offset=0&rating=g&lang=en`
+        : null;
+
+      if (!endpoint) {
+        setGifs(FALLBACK_GIFS);
+        return;
+      }
+
+      const response = await fetch(endpoint);
       if (!response.ok) {
         throw new Error("Failed to fetch GIFs");
       }
-      
+
       const data = await response.json();
-      setGifs(data.data || []);
+      setGifs(data.data?.length ? data.data : FALLBACK_GIFS);
     } catch (err) {
       console.error("GIF search error:", err);
-      setError(true);
+      setGifs(FALLBACK_GIFS);
+      setError(false);
     } finally {
       setLoading(false);
     }
@@ -92,7 +108,7 @@ export function GifPicker({ lang, onGifSelected, onClose }: GifPickerProps) {
 
           {!loading && !error && gifs.length === 0 && query && (
             <div className="text-center py-8 text-slate-400">
-              Nenhum GIF encontrado para "{query}"
+              Nenhum GIF encontrado para &quot;{query}&quot;
             </div>
           )}
 

@@ -69,6 +69,22 @@ export function MissionForm() {
             className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
           />
         </div>
+        <div className="sm:col-span-2">
+          <label className="mb-1 block text-sm font-medium text-slate-700">Contexto da missão</label>
+          <textarea name="context" required rows={2} placeholder="O que deve ser verificado no local?" className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100" />
+        </div>
+        <div className="sm:col-span-2">
+          <label className="mb-1 block text-sm font-medium text-slate-700">Por que esta missão importa?</label>
+          <textarea name="impact" required rows={2} placeholder="Como esta ação ajuda a sociedade e o meio ambiente?" className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100" />
+        </div>
+        <div>
+          <label className="mb-1 block text-sm font-medium text-slate-700">Latitude do local</label>
+          <input type="number" name="latitude" required step="any" min={-90} max={90} placeholder="-8.0476" className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100" />
+        </div>
+        <div>
+          <label className="mb-1 block text-sm font-medium text-slate-700">Longitude do local</label>
+          <input type="number" name="longitude" required step="any" min={-180} max={180} placeholder="-34.8770" className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100" />
+        </div>
         <div>
           <label className="mb-1 block text-sm font-medium text-slate-700">Categoria</label>
           <select

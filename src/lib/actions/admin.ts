@@ -27,6 +27,10 @@ export async function createMissionAction(
   const description = String(formData.get("description") ?? "").trim();
   const descriptionEn = String(formData.get("descriptionEn") ?? "").trim() || null;
   const descriptionEs = String(formData.get("descriptionEs") ?? "").trim() || null;
+  const context = String(formData.get("context") ?? "").trim() || null;
+  const impact = String(formData.get("impact") ?? "").trim() || null;
+  const latitude = Number(formData.get("latitude"));
+  const longitude = Number(formData.get("longitude"));
   const category = String(formData.get("category") ?? "other") as
     | "planting"
     | "donation"
@@ -36,7 +40,9 @@ export async function createMissionAction(
   const pointsReward = Number(formData.get("pointsReward") ?? 0);
   const foneReward = String(formData.get("foneReward") ?? "0");
 
-  if (!title || !description || !pointsReward) {
+  if (!title || !description || !context || !impact || !pointsReward ||
+      !Number.isFinite(latitude) || !Number.isFinite(longitude) ||
+      latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
     return { error: "invalid" };
   }
 
@@ -47,6 +53,10 @@ export async function createMissionAction(
     description,
     descriptionEn,
     descriptionEs,
+    context,
+    impact,
+    latitude,
+    longitude,
     category,
     pointsReward,
     foneReward,

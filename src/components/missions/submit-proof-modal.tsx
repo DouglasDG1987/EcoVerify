@@ -11,6 +11,8 @@ const errorKeyMap: Record<string, string> = {
   report_length: "error_report_length",
   daily_limit: "error_daily_limit",
   duplicate_photo: "error_duplicate_photo",
+  outside_mission_area: "error_outside_mission_area",
+  mission_location_not_configured: "error_mission_location_not_configured",
 };
 
 export function SubmitProofModal({

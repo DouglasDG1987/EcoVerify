@@ -180,6 +180,16 @@ const dict = {
     en: "This photo has already been used in another submission.",
     es: "Esta foto ya fue usada en otro comprobante.",
   },
+  error_outside_mission_area: {
+    pt: "Você precisa estar no local da missão para enviar a comprovação.",
+    en: "You must be at the mission location to submit proof.",
+    es: "Debes estar en el lugar de la misión para enviar el comprobante.",
+  },
+  error_mission_location_not_configured: {
+    pt: "Esta missão ainda não tem um local configurado.",
+    en: "This mission does not have a location configured yet.",
+    es: "Esta misión aún no tiene una ubicación configurada.",
+  },
   error_generic: {
     pt: "Algo deu errado. Tente novamente.",
     en: "Something went wrong. Please try again.",

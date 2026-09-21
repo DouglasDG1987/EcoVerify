@@ -6,9 +6,7 @@ import { eq, and } from "drizzle-orm";
 import { db } from "@/db";
 import { communityChat, messageFavorites, messageReports, notifications, users } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth";
-import type { ActionState } from "@/lib/actions/auth";
-
-export type { ActionState };
+export type ActionState = { error?: string };
 
 export async function sendMessageAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const user = await getCurrentUser();
