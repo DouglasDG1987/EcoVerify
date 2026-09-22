@@ -17,9 +17,9 @@ Este projeto usa Capacitor para gerar o APK Android do EcoVerify.
 npm install
 ```
 
-2. Configure a URL de produção no `capacitor.config.ts`:
-```typescript
-url: 'https://your-production-url.com'
+2. Configure a URL HTTPS real do servidor Next.js:
+```bash
+export CAPACITOR_SERVER_URL="https://seu-dominio-de-producao.example"
 ```
 
 3. Sincronize o projeto Android:
@@ -108,8 +108,8 @@ Após o build:
 
 Antes de build de produção:
 
-1. Atualize `capacitor.config.ts` com a URL de produção
-2. Atualize `DATABASE_URL` nas variáveis de ambiente
+1. Configure `CAPACITOR_SERVER_URL` com a URL HTTPS real do servidor Next.js
+2. Configure `DATABASE_URL` somente no ambiente do servidor Next.js
 3. Configure o banco de dados de produção
 4. Teste completamente em ambiente de staging
 

@@ -71,8 +71,7 @@ jobs:
       - name: Sync Capacitor
         run: npx cap sync android
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          CAPACITOR_SERVER_URL: ${{ secrets.CAPACITOR_SERVER_URL }}
+          CAPACITOR_SERVER_URL: ${{ vars.CAPACITOR_SERVER_URL || secrets.CAPACITOR_SERVER_URL }}
 
       # ==========================================
       # 8. Build do APK Debug
