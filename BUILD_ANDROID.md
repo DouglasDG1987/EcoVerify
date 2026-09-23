@@ -75,27 +75,18 @@ O APK release será gerado em: `android/app/build/outputs/apk/release/app-releas
 
 O projeto tem um workflow automatizado que constrói o APK no GitHub Actions.
 
-### Ativar build automatizado de release
-
-Para construir APKs assinados automaticamente:
-
-1. Gere um keystore conforme acima
-2. Converta o keystore para base64:
-```bash
-base64 release.keystore > keystore.base64
-```
-
-3. Adicione os secrets no GitHub (Settings > Secrets and variables > Actions):
-   - `KEYSTORE_FILE_BASE64`: Conteúdo do arquivo keystore.base64
-   - `KEYSTORE_PASSWORD`: Senha do keystore
-   - `KEY_ALIAS`: Alias do keystore (ex: ecoverify)
-   - `KEY_PASSWORD`: Senha da chave
-
-4. Configure o `android/app/build.gradle` para usar os secrets (se necessário)
-
 ### Build Debug Automatizado
 
-O workflow sempre constrói APKs debug sem necessidade de secrets.
+O workflow constrói um APK debug e o disponibiliza como artifact por 30 dias. Como
+o aplicativo usa uma URL de servidor em tempo de execução, antes da primeira
+execução configure `CAPACITOR_SERVER_URL` em **Settings > Secrets and variables
+> Actions**:
+
+- prefira uma *Repository variable* para uma URL pública; ou
+- use um *Repository secret* se a URL não puder ser exposta.
+
+A URL deve começar com `https://`. O workflow valida essa configuração antes de
+sincronizar o Capacitor, para evitar gerar um APK com configuração inválida.
 
 ### Baixar o APK
 

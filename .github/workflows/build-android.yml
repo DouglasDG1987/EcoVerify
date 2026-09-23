@@ -11,9 +11,9 @@ on:
 
   workflow_dispatch:
 
-# Permite que o GitHub Actions crie e atualize Releases
+# O workflow só precisa ler o repositório e publicar o artifact da execução.
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build:
@@ -50,14 +50,20 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
+      # Valida o Gradle Wrapper e reutiliza o cache das dependências Android.
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
       # ==========================================
       # 5. Android SDK
       # ==========================================
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
         with:
-          packages: 'platform-tools platforms;android-36 build-tools;36.0.0'
           accept-android-sdk-licenses: true
+
+      - name: Install Android SDK packages
+        run: sdkmanager --install "platform-tools" "platforms;android-36" "build-tools;36.0.0"
 
       # ==========================================
       # 6. Permissão do Gradle
@@ -68,8 +74,25 @@ jobs:
       # ==========================================
       # 7. Sincronizar Capacitor
       # ==========================================
+      - name: Validate Capacitor server URL
+        env:
+          CAPACITOR_SERVER_URL: ${{ vars.CAPACITOR_SERVER_URL || secrets.CAPACITOR_SERVER_URL }}
+        run: |
+          if [ -z "$CAPACITOR_SERVER_URL" ]; then
+            echo "CAPACITOR_SERVER_URL must be configured as a repository variable or secret."
+            exit 1
+          fi
+
+          case "$CAPACITOR_SERVER_URL" in
+            https://*) ;;
+            *)
+              echo "CAPACITOR_SERVER_URL must use HTTPS."
+              exit 1
+              ;;
+          esac
+
       - name: Sync Capacitor
-        run: npx cap sync android
+        run: npm exec cap sync android
         env:
           CAPACITOR_SERVER_URL: ${{ vars.CAPACITOR_SERVER_URL || secrets.CAPACITOR_SERVER_URL }}
 
@@ -77,9 +100,8 @@ jobs:
       # 8. Build do APK Debug
       # ==========================================
       - name: Build debug APK
-        run: |
-          cd android
-          ./gradlew assembleDebug
+        run: ./gradlew --no-daemon assembleDebug
+        working-directory: android
 
       # ==========================================
       # 9. Upload do APK como Artifact
@@ -90,42 +112,4 @@ jobs:
           name: ecoverify-debug
           path: android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
-
-      # ==========================================
-      # 10. Criar GitHub Release
-      # ==========================================
-      - name: Create GitHub Release
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v${{ github.run_number }}
-          name: EcoVerify Android APK v${{ github.run_number }}
-
-          body: |
-            ## EcoVerify Android APK
-
-            ### 📱 Debug APK
-
-            APK gerado automaticamente pelo GitHub Actions.
-
-            ### Instalação
-
-            1. Baixe o arquivo `app-debug.apk`
-            2. Transfira o APK para o dispositivo Android
-            3. Permita a instalação de aplicativos desta fonte, se solicitado
-            4. Abra o arquivo APK para instalar
-
-            ### Observações
-
-            - Esta é uma versão Debug para testes.
-            - Esta versão não é destinada à distribuição pela Google Play Store.
-            - Cada execução na branch `main` gera uma nova versão da Release.
-
-          files: |
-            android/app/build/outputs/apk/debug/app-debug.apk
-
-          draft: false
-          prerelease: true
-
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          if-no-files-found: error
