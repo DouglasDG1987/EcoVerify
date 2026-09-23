@@ -48,7 +48,7 @@ jobs:
         uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
-          java-version: '21'
+          java-version: '17'
 
       # ==========================================
       # 5. Android SDK
@@ -56,7 +56,10 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
         with:
-          packages: 'platform-tools platforms;android-36 build-tools;36.0.0'
+          packages: >-
+            platform-tools
+            platforms;android-35
+            build-tools;35.0.0
           accept-android-sdk-licenses: true
 
       # ==========================================
