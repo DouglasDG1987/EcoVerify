@@ -4,9 +4,9 @@ import { db } from "@/db";
 import { quizAttempts } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth";
 import { citizenOnly } from "@/lib/role-guard";
-import { answeredResults, quizDay, quizForClient, quizText } from "@/lib/quiz";
+import { answeredResults, quizDay, quizForClient } from "@/lib/quiz";
 import { answerQuizAction } from "@/lib/actions/quiz";
-import { QuizView } from "@/components/quiz/quiz-view";
+import { QuizHero, QuizView } from "@/components/quiz/quiz-view";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +16,6 @@ export default async function QuizPage() {
   citizenOnly(user.role);
   const lang = user.language;
   const day = quizDay();
-  const text = quizText(lang);
   const [attempt] = await db
     .select()
     .from(quizAttempts)
@@ -29,9 +28,8 @@ export default async function QuizPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl">
-      <h1 className="text-2xl font-bold text-slate-900 md:text-3xl">🧠 {text.title}</h1>
-      <p className="mt-1 mb-5 text-sm leading-relaxed text-slate-500">{text.intro}</p>
+    <div className="mx-auto max-w-2xl space-y-4">
+      <QuizHero lang={lang} />
       <QuizView
         key={day}
         lang={lang}

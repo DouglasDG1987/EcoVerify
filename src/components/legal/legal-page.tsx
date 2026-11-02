@@ -3,6 +3,7 @@ import { LogoHorizontal } from "@/components/logo";
 import { PoweredByFone } from "@/components/brand/fone";
 import { TERMS_VERSION } from "@/lib/legal";
 import { t, type Lang } from "@/lib/i18n";
+import { BackButton, BACK_PILL } from "@/components/legal/back-button";
 
 export function LegalPage({ lang, title, children }: { lang: Lang; title: string; children: React.ReactNode }) {
   const note = t(lang, "legal_pt_only");
@@ -14,6 +15,9 @@ export function LegalPage({ lang, title, children }: { lang: Lang; title: string
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 px-4 py-8">
       <div className="mx-auto max-w-3xl">
+        <BackButton fallback="/" className={BACK_PILL}>
+          {t(lang, "back")}
+        </BackButton>
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <Link href="/">
             <LogoHorizontal height={36} />

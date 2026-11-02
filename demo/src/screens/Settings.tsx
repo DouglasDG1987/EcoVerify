@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { Download, Monitor, Moon, Settings as SettingsIcon, Sun, Trash2 } from "lucide-react";
+import { Monitor, Moon, Settings as SettingsIcon, Sun, Trash2 } from "lucide-react";
 import { DEFAULT_THEME, THEMES } from "@/lib/theme";
 import { t, type Lang } from "@/lib/i18n";
 import { PAYMENTS_ENABLED } from "@/lib/features";
+import { ExportDataCard } from "@/components/account/export-data";
 import { deleteMyAccount, exportMyData, updateSettings, useLang, type FontSize, type User } from "../store";
-import { PageHeader, btnDanger, btnSecondary, card, toast } from "../components/ui";
+import { PageHeader, btnDanger, card, toast } from "../components/ui";
 import { Link, navigate } from "../router";
 import { dt, errorText } from "../i18n";
 import { formatDate } from "@/lib/utils";
@@ -22,19 +23,6 @@ function PrivacySection({ user }: { user: User }) {
   const lang = useLang();
   const [confirm, setConfirm] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const download = () => {
-    const json = exportMyData();
-    if (!json) return;
-    const url = URL.createObjectURL(new Blob([json], { type: "application/json" }));
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `ecoverify-meus-dados-${new Date().toISOString().slice(0, 10)}.json`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  };
 
   const remove = () => {
     const result = deleteMyAccount(confirm);
@@ -54,13 +42,13 @@ function PrivacySection({ user }: { user: User }) {
           <Link to="/transparencia" className="text-emerald-700 underline">{t(lang, "transparency")}</Link>
         </p>
       </div>
-      <div>
-        <p className="text-sm font-semibold text-slate-700">{t(lang, "export_title")}</p>
-        <p className="mt-1 text-xs text-slate-500">{t(lang, "export_text")}</p>
-        <button type="button" onClick={download} className={`${btnSecondary} mt-2`}>
-          <Download className="h-4 w-4" /> {t(lang, "export_button")}
-        </button>
-      </div>
+      <ExportDataCard
+        lang={lang}
+        load={async () => {
+          const json = exportMyData();
+          return json ? { ok: true, json } : { ok: false, error: "failed" };
+        }}
+      />
       <div className="rounded-2xl border border-red-200 bg-red-50/40 p-4">
         <p className="text-sm font-semibold text-red-700">{t(lang, "delete_title")}</p>
         <p className="mt-1 text-sm text-slate-600">{t(lang, PAYMENTS_ENABLED ? "delete_text" : "delete_text_free")}</p>

@@ -416,8 +416,30 @@ export function quizText(lang: Lang) {
       `${QUIZ_SIZE} quick questions about waste, recycling and the environment. Each right answer is worth ${QUIZ_POINTS_PER_CORRECT} points and getting them all right gives +${QUIZ_PERFECT_BONUS}. One try per day; new questions tomorrow.`,
       `${QUIZ_SIZE} preguntas rápidas sobre basura, reciclaje y medio ambiente. Cada acierto vale ${QUIZ_POINTS_PER_CORRECT} puntos y acertar todas da +${QUIZ_PERFECT_BONUS}. Un intento por día; mañana hay preguntas nuevas.`,
     ),
+    tagline: T(
+      "Perguntas rápidas sobre lixo, reciclagem e meio ambiente. Uma tentativa por dia.",
+      "Quick questions about waste, recycling and the environment. One try per day.",
+      "Preguntas rápidas sobre basura, reciclaje y medio ambiente. Un intento por día.",
+    ),
+    chipQuestions: T(`${QUIZ_SIZE} perguntas`, `${QUIZ_SIZE} questions`, `${QUIZ_SIZE} preguntas`),
+    chipPerRight: T(`+${QUIZ_POINTS_PER_CORRECT} pts por acerto`, `+${QUIZ_POINTS_PER_CORRECT} pts per right answer`, `+${QUIZ_POINTS_PER_CORRECT} pts por acierto`),
+    chipBonus: T(`+${QUIZ_PERFECT_BONUS} se gabaritar`, `+${QUIZ_PERFECT_BONUS} for a perfect score`, `+${QUIZ_PERFECT_BONUS} si aciertas todas`),
+    score: (correct: number) => T(`${correct} ${correct === 1 ? "acerto" : "acertos"}`, `${correct} right`, `${correct} ${correct === 1 ? "acierto" : "aciertos"}`),
+    learn: T("Você sabia?", "Did you know?", "¿Sabías que?"),
+    points: (points: number) => T(`+${points} pontos`, `+${points} points`, `+${points} puntos`),
+    resultTitle: (correct: number) =>
+      correct === QUIZ_SIZE
+        ? T("Gabaritou! 🏆", "Perfect score! 🏆", "¡Todas correctas! 🏆")
+        : correct >= QUIZ_SIZE - 1
+          ? T("Mandou muito bem!", "Great job!", "¡Muy bien!")
+          : correct >= Math.ceil(QUIZ_SIZE / 2)
+            ? T("Bom resultado!", "Good result!", "¡Buen resultado!")
+            : T("Valeu por jogar!", "Thanks for playing!", "¡Gracias por jugar!"),
+    resultText: (correct: number) =>
+      T(`Você acertou ${correct} de ${QUIZ_SIZE} perguntas.`, `You got ${correct} of ${QUIZ_SIZE} questions right.`, `Acertaste ${correct} de ${QUIZ_SIZE} preguntas.`),
+    review: T("Revisar respostas", "Review answers", "Revisar respuestas"),
     question: (n: number) => T(`Pergunta ${n} de ${QUIZ_SIZE}`, `Question ${n} of ${QUIZ_SIZE}`, `Pregunta ${n} de ${QUIZ_SIZE}`),
-    right: T("Certo! ✓", "Correct! ✓", "¡Correcto! ✓"),
+    right: T("Certo!", "Correct!", "¡Correcto!"),
     wrong: T("Não foi dessa vez", "Not this time", "Esta vez no"),
     next: T("Próxima pergunta", "Next question", "Siguiente pregunta"),
     finish: T("Ver resultado", "See result", "Ver resultado"),

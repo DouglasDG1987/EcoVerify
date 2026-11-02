@@ -101,15 +101,6 @@ export function Shell({ user, children }: { user: User; children: ReactNode }) {
             >
               <Users className="h-4 w-4" /> {roleLabel(user, lang)}
             </button>
-            <button
-              type="button"
-              aria-label="menu"
-              onClick={() => setDrawerOpen(true)}
-              className="relative grid h-10 w-10 place-items-center rounded-xl text-slate-700 hover:bg-slate-100"
-            >
-              <Menu className="h-6 w-6" />
-              {unread > 0 && <span className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full bg-red-500" />}
-            </button>
           </div>
         </header>
       </div>
