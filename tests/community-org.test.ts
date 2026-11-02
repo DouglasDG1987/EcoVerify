@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { getTableConfig } from "drizzle-orm/pg-core";
-import { mobileNav, navItemsFor } from "@/lib/nav";
+import { groupNav, mobileNav, navItemsFor } from "@/lib/nav";
 import { communityChat } from "@/db/schema";
 
 const hrefs = (role: "citizen" | "moderator" | "admin", hasCommunity: boolean) =>
@@ -39,5 +39,20 @@ describe("community per organization", () => {
     expect(update).toMatch(/add column if not exists organization_id uuid/i);
     expect(update).toMatch(/on delete cascade/i);
     expect(update).toMatch(/create index if not exists community_chat_org_created_idx/i);
+  });
+});
+
+describe("menu sections", () => {
+  it("groups the citizen menu into everyday, explore and account, in order", () => {
+    const sections = groupNav(navItemsFor("citizen", true, true));
+    expect(sections.map((s) => s.group)).toEqual(["main", "explore", "account"]);
+    expect(sections[1].items.map((i) => i.href)).toEqual(["/quiz", "/mapa", "/lixo", "/beneficios", "/org"]);
+    expect(groupNav(navItemsFor("moderator", true, false)).map((s) => s.group)).toEqual(["main", "explore", "staff", "account"]);
+    expect(groupNav(navItemsFor("admin", true)).map((s) => s.group)).toEqual(["staff", "account"]);
+  });
+
+  it("leaves only the secondary screens for the phone menu", () => {
+    const { more } = mobileNav(navItemsFor("citizen", true, true));
+    expect(more.map((i) => i.href)).toEqual(["/quiz", "/mapa", "/lixo", "/beneficios", "/org", "/notifications", "/profile", "/settings"]);
   });
 });
