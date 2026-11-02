@@ -9,6 +9,16 @@ import { dt } from "../i18n";
 import { logout, moderatorsOn, useLang, useStore, type User } from "../store";
 import { Avatar } from "./ui";
 import { ProfileSwitcher } from "./ProfileSwitcher";
+import { DrawerNav, DrawerProfileCard, SidebarNav, type NavLinkProps } from "@/components/nav/nav-menu";
+import { initials } from "@/lib/utils";
+
+function DemoLink({ href, className, onClick, children }: NavLinkProps) {
+  return (
+    <Link to={href} className={className} onClick={onClick}>
+      {children}
+    </Link>
+  );
+}
 
 
 /** Keeps content clear of the status bar / notch in the Android app (edge-to-edge) and on iPhone. */
@@ -35,10 +45,8 @@ export function Shell({ user, children }: { user: User; children: ReactNode }) {
   const { primary: primaryMobile, more: moreMobile } = mobileNav(items);
   const isActive = (href: string) => path === href || path.startsWith(href + "/");
 
-  const badge = (href: string) => {
-    const count = href === "/notifications" ? unread : href === "/moderation" ? pendingReview : 0;
-    return count > 0 ? <span className="rounded-full bg-red-500 px-2 py-0.5 text-xs font-bold text-white">{count}</span> : null;
-  };
+  const badge = (href: string) => (href === "/notifications" ? unread : href === "/moderation" ? pendingReview : 0);
+  const closeDrawer = () => setDrawerOpen(false);
 
   const userCard = (
     <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-3">
@@ -113,20 +121,8 @@ export function Shell({ user, children }: { user: User; children: ReactNode }) {
             <LogoMark size={40} />
             <span className="text-xl font-extrabold text-slate-900">EcoVerify</span>
           </div>
-          <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-2">
-            {items.map((item) => (
-              <Link
-                key={item.href}
-                to={item.href}
-                className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-colors ${
-                  isActive(item.href) ? "bg-emerald-50 text-emerald-700" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                }`}
-              >
-                <item.icon className="h-5 w-5" />
-                <span className="flex-1">{t(lang, item.labelKey)}</span>
-                {badge(item.href)}
-              </Link>
-            ))}
+          <nav className="flex-1 overflow-y-auto px-3 pb-4 pt-1">
+            <SidebarNav items={items} lang={lang} isActive={isActive} badge={badge} Link={DemoLink} />
           </nav>
           <div className="border-t border-black/5 p-4">
             {userCard}
@@ -140,38 +136,25 @@ export function Shell({ user, children }: { user: User; children: ReactNode }) {
         </main>
       </div>
 
-      {/* Mobile drawer */}
+      {/* Mobile drawer ("More"): profile card, tiles to explore, account list */}
       {drawerOpen && (
-        <div className="fixed inset-0 z-50 md:hidden">
-          <div className="absolute inset-0 bg-black/40 animate-fade-in" onClick={() => setDrawerOpen(false)} />
-          <div className="absolute right-0 top-0 flex h-full w-72 flex-col overflow-y-auto bg-white p-5 pt-[max(1.25rem,env(safe-area-inset-top))] shadow-2xl animate-slide-up">
-            <div className="mb-6 flex items-center justify-between">
+        <div className="fixed inset-0 z-50 md:hidden" role="dialog" aria-modal="true">
+          <div className="absolute inset-0 bg-black/40 animate-fade-in" onClick={closeDrawer} />
+          <div className="absolute right-0 top-0 flex h-full w-[88vw] max-w-sm flex-col bg-slate-50 shadow-2xl animate-slide-in-right">
+            <div className="flex items-center justify-between px-5 pb-3 pt-[max(1rem,env(safe-area-inset-top))]">
               <div className="flex items-center gap-2">
-                <LogoMark size={32} />
+                <LogoMark size={30} />
                 <span className="font-extrabold text-slate-900">EcoVerify</span>
               </div>
-              <button type="button" onClick={() => setDrawerOpen(false)} className="grid h-9 w-9 place-items-center rounded-full text-slate-500 hover:bg-slate-100">
+              <button type="button" aria-label="close" onClick={closeDrawer} className="grid h-9 w-9 place-items-center rounded-full bg-white text-slate-500 shadow-sm hover:bg-slate-100">
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <div className="mb-4">{userCard}</div>
-            <nav className="space-y-1">
-              {items.map((item) => (
-                <Link
-                  key={item.href}
-                  to={item.href}
-                  onClick={() => setDrawerOpen(false)}
-                  className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium ${
-                    isActive(item.href) ? "bg-emerald-50 text-emerald-700" : "text-slate-600 hover:bg-slate-50"
-                  }`}
-                >
-                  <item.icon className="h-5 w-5" />
-                  <span className="flex-1">{t(lang, item.labelKey)}</span>
-                  {badge(item.href)}
-                </Link>
-              ))}
-            </nav>
-            <div className="mt-4">{actions}</div>
+            <div className="flex-1 space-y-5 overflow-y-auto px-5 pb-4">
+              <DrawerProfileCard name={user.name} subtitle={roleLabel(user, lang)} initials={initials(user.name)} href="/profile" lang={lang} Link={DemoLink} onNavigate={closeDrawer} />
+              <DrawerNav items={moreMobile.filter((item) => item.href !== "/profile")} lang={lang} isActive={isActive} badge={badge} Link={DemoLink} onNavigate={closeDrawer} />
+            </div>
+            <div className="border-t border-black/5 bg-white px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-1">{actions}</div>
           </div>
         </div>
       )}

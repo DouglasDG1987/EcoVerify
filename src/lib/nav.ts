@@ -4,11 +4,26 @@ import { Sprout, FileText, Trophy, MessageSquare, Shield, BarChart3, Bell, User,
 
 export type Role = "citizen" | "moderator" | "admin";
 
+/** Menu sections, in this order: what you use every day, things to explore, team tools, your account. */
+export type NavGroup = "main" | "explore" | "staff" | "account";
+export const NAV_GROUPS: NavGroup[] = ["main", "explore", "staff", "account"];
+export const NAV_GROUP_LABEL: Record<NavGroup, DictKey> = {
+  main: "nav_group_main",
+  explore: "nav_group_explore",
+  staff: "nav_group_staff",
+  account: "nav_group_account",
+};
+
+/** Colour of the item's icon badge (palettes that also have a dark-mode version in theme.css). */
+export type NavTone = "emerald" | "teal" | "sky" | "amber" | "lime" | "orange" | "green" | "red" | "slate";
+
 export type NavItem = {
   href: string;
   labelKey: DictKey;
   icon: LucideIcon;
   roles: Role[];
+  group: NavGroup;
+  tone: NavTone;
 };
 
 /**
@@ -19,24 +34,30 @@ export type NavItem = {
  */
 const PEOPLE: Role[] = ["citizen", "moderator"];
 export const NAV_ITEMS: NavItem[] = [
-  // Citizens and moderators
-  { href: "/missions", labelKey: "nav_missions", icon: Sprout, roles: PEOPLE },
-  { href: "/submissions", labelKey: "nav_submissions", icon: FileText, roles: PEOPLE },
-  { href: "/ranking", labelKey: "nav_ranking", icon: Trophy, roles: PEOPLE },
-  { href: "/community", labelKey: "nav_community", icon: MessageSquare, roles: PEOPLE },
-  { href: "/quiz", labelKey: "nav_quiz", icon: Brain, roles: PEOPLE },
-  { href: "/lixo", labelKey: "nav_dumps", icon: MapPinCheck, roles: PEOPLE },
-  { href: "/mapa", labelKey: "nav_map", icon: MapIcon, roles: PEOPLE },
-  { href: "/beneficios", labelKey: "nav_benefits", icon: Gift, roles: PEOPLE },
-  { href: "/org", labelKey: "nav_orgs", icon: Building2, roles: PEOPLE },
+  // Citizens and moderators: every day
+  { href: "/missions", labelKey: "nav_missions", icon: Sprout, roles: PEOPLE, group: "main", tone: "emerald" },
+  { href: "/submissions", labelKey: "nav_submissions", icon: FileText, roles: PEOPLE, group: "main", tone: "teal" },
+  { href: "/ranking", labelKey: "nav_ranking", icon: Trophy, roles: PEOPLE, group: "main", tone: "amber" },
+  { href: "/community", labelKey: "nav_community", icon: MessageSquare, roles: PEOPLE, group: "main", tone: "sky" },
+  // Citizens and moderators: explore
+  { href: "/quiz", labelKey: "nav_quiz", icon: Brain, roles: PEOPLE, group: "explore", tone: "lime" },
+  { href: "/mapa", labelKey: "nav_map", icon: MapIcon, roles: PEOPLE, group: "explore", tone: "green" },
+  { href: "/lixo", labelKey: "nav_dumps", icon: MapPinCheck, roles: PEOPLE, group: "explore", tone: "orange" },
+  { href: "/beneficios", labelKey: "nav_benefits", icon: Gift, roles: PEOPLE, group: "explore", tone: "red" },
+  { href: "/org", labelKey: "nav_orgs", icon: Building2, roles: PEOPLE, group: "explore", tone: "sky" },
   // Staff
-  { href: "/admin", labelKey: "nav_admin", icon: BarChart3, roles: ["admin"] },
-  { href: "/moderation", labelKey: "nav_moderation", icon: Shield, roles: ["moderator", "admin"] },
+  { href: "/admin", labelKey: "nav_admin", icon: BarChart3, roles: ["admin"], group: "staff", tone: "emerald" },
+  { href: "/moderation", labelKey: "nav_moderation", icon: Shield, roles: ["moderator", "admin"], group: "staff", tone: "slate" },
   // Everyone
-  { href: "/notifications", labelKey: "nav_notifications", icon: Bell, roles: ["citizen", "moderator", "admin"] },
-  { href: "/profile", labelKey: "nav_profile", icon: User, roles: ["citizen", "moderator", "admin"] },
-  { href: "/settings", labelKey: "nav_settings", icon: Settings, roles: ["citizen", "moderator", "admin"] },
+  { href: "/notifications", labelKey: "nav_notifications", icon: Bell, roles: ["citizen", "moderator", "admin"], group: "account", tone: "slate" },
+  { href: "/profile", labelKey: "nav_profile", icon: User, roles: ["citizen", "moderator", "admin"], group: "account", tone: "slate" },
+  { href: "/settings", labelKey: "nav_settings", icon: Settings, roles: ["citizen", "moderator", "admin"], group: "account", tone: "slate" },
 ];
+
+/** The items split into their sections (empty sections left out), in menu order. */
+export function groupNav(items: NavItem[]): { group: NavGroup; items: NavItem[] }[] {
+  return NAV_GROUPS.map((group) => ({ group, items: items.filter((item) => item.group === group) })).filter((section) => section.items.length > 0);
+}
 
 /** Bottom bar on phones: the first 4 of these that the role has (the rest go to "More"). */
 export const MOBILE_PRIMARY_HREFS = ["/missions", "/submissions", "/ranking", "/community", "/admin", "/moderation", "/notifications", "/profile"];
