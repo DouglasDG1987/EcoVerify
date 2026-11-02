@@ -15,21 +15,20 @@ import { PAYMENTS_ENABLED } from "@/lib/features";
 import { LogoHorizontal } from "@/components/logo";
 import { FoneAmount, PoweredByFone } from "@/components/brand/fone";
 import { guestLang } from "@/lib/guest-lang";
+import { BackButton, BACK_CTA, BACK_PILL } from "@/components/legal/back-button";
 
 export const metadata: Metadata = {
   title: "Transparency · EcoVerify",
   description: "Impacto, recompensas em FONE e patrocínios do EcoVerify, em números públicos.",
 };
 
-async function pickLang(param?: string): Promise<Lang> {
-  return guestLang(param, await getCurrentUser());
-}
 
 const fmt = (lang: Lang, value: number, digits = 0) =>
   value.toLocaleString(lang === "pt" ? "pt-BR" : lang === "es" ? "es-ES" : "en-US", { minimumFractionDigits: digits, maximumFractionDigits: digits });
 
 export default async function TransparencyPage({ searchParams }: { searchParams: Promise<{ lang?: string }> }) {
-  const lang = await pickLang((await searchParams).lang);
+  const user = await getCurrentUser();
+  const lang = await guestLang((await searchParams).lang, user);
   const text = TEXT[lang];
   const { explorerUrl, rewardsWallet } = getFoneConfig();
   const settings = await getPayoutSettings();
@@ -85,6 +84,11 @@ export default async function TransparencyPage({ searchParams }: { searchParams:
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 px-4 py-8">
       <div className="mx-auto max-w-4xl">
+        {user && (
+          <BackButton fallback="/settings" className={BACK_PILL}>
+            {t(lang, "back")}
+          </BackButton>
+        )}
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <Link href="/">
             <LogoHorizontal height={36} />
@@ -263,9 +267,15 @@ export default async function TransparencyPage({ searchParams }: { searchParams:
         )}
 
         <div className="mt-8 flex flex-col items-center gap-3">
-          <Link href="/" className="rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 px-5 py-2.5 text-sm font-bold text-white">
-            {text.back}
-          </Link>
+          {user ? (
+            <BackButton fallback="/settings" className={BACK_CTA}>
+              {text.backSignedIn}
+            </BackButton>
+          ) : (
+            <Link href="/" className={BACK_CTA}>
+              {text.back}
+            </Link>
+          )}
           <nav className="flex gap-4 text-xs font-medium text-slate-500">
             <Link href="/termos" className="hover:underline">{t(lang, "terms_of_use")}</Link>
             <Link href="/privacidade" className="hover:underline">{t(lang, "privacy_policy")}</Link>

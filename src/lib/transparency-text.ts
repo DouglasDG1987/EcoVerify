@@ -41,6 +41,7 @@ export const TRANSPARENCY_TEXT: Record<Lang, Record<string, string>> = {
     to: "Para",
     tx: "Transação",
     back: "Entrar no EcoVerify",
+    backSignedIn: "Voltar ao app",
   },
   en: {
     title: "Transparency",
@@ -81,6 +82,7 @@ export const TRANSPARENCY_TEXT: Record<Lang, Record<string, string>> = {
     to: "To",
     tx: "Transaction",
     back: "Open EcoVerify",
+    backSignedIn: "Back to the app",
   },
   es: {
     title: "Transparencia",
@@ -121,5 +123,6 @@ export const TRANSPARENCY_TEXT: Record<Lang, Record<string, string>> = {
     to: "Para",
     tx: "Transacción",
     back: "Entrar en EcoVerify",
+    backSignedIn: "Volver a la app",
   },
 };

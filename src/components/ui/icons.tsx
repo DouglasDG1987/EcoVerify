@@ -3,6 +3,8 @@ import { LucideIcon } from "lucide-react";
 // Re-export all icons from lucide-react
 export {
   Home,
+  ArrowLeft,
+  ArrowRight,
   Gift,
   Building2,
   FileText,

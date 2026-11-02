@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useRef } from "react";
 import { changePasswordAction, deleteAccountAction } from "@/lib/actions/account";
 import type { ActionState } from "@/lib/actions/auth";
@@ -7,6 +8,14 @@ import { actionErrorMessage } from "@/lib/action-errors";
 import { t, type Lang } from "@/lib/i18n";
 import { PAYMENTS_ENABLED } from "@/lib/features";
 import { EmailBanner } from "@/components/account/email-banner";
+import { ExportDataCard, type ExportData } from "@/components/account/export-data";
+
+async function loadExport(): Promise<ExportData> {
+  const res = await fetch("/api/account/export", { cache: "no-store", credentials: "same-origin" });
+  if (res.status === 429) return { ok: false, error: "too_many" };
+  if (!res.ok) return { ok: false, error: "failed" };
+  return { ok: true, json: await res.text() };
+}
 
 const initialState: ActionState = {};
 const section = "space-y-4 rounded-3xl border border-black/5 bg-white p-6 shadow-sm";
@@ -108,28 +117,18 @@ export function AccountSettings({
         <div className="text-sm text-slate-600">
           {termsAcceptedOn && <p>{t(lang, "terms_accepted_on").replace("{date}", termsAcceptedOn)}</p>}
           <p className="mt-1 flex flex-wrap gap-4 font-semibold">
-            <a href="/termos" target="_blank" rel="noopener noreferrer" className="text-emerald-700 underline">
+            <Link href="/termos" className="text-emerald-700 underline">
               {t(lang, "terms_of_use")}
-            </a>
-            <a href="/privacidade" target="_blank" rel="noopener noreferrer" className="text-emerald-700 underline">
+            </Link>
+            <Link href="/privacidade" className="text-emerald-700 underline">
               {t(lang, "privacy_policy")}
-            </a>
-            <a href="/transparencia" target="_blank" rel="noopener noreferrer" className="text-emerald-700 underline">
+            </Link>
+            <Link href="/transparencia" className="text-emerald-700 underline">
               {t(lang, "transparency")}
-            </a>
+            </Link>
           </p>
         </div>
-        <div className="rounded-2xl border border-slate-200 p-4">
-          <p className="text-sm font-semibold text-slate-700">{t(lang, "export_title")}</p>
-          <p className="mt-1 text-xs text-slate-500">{t(lang, "export_text")}</p>
-          <a
-            href="/api/account/export"
-            download
-            className="mt-3 inline-flex rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100"
-          >
-            ⬇ {t(lang, "export_button")}
-          </a>
-        </div>
+        <ExportDataCard lang={lang} load={loadExport} />
         <DeleteAccountForm lang={lang} />
       </section>
     </div>

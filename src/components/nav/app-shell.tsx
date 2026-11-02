@@ -90,14 +90,6 @@ export function AppShell({
           <LogoMark size={32} />
           <span className="text-lg font-extrabold text-slate-900">EcoVerify</span>
         </Link>
-        <button
-          type="button"
-          aria-label="menu"
-          onClick={() => setDrawerOpen(true)}
-          className="grid h-10 w-10 place-items-center rounded-xl text-slate-700 hover:bg-slate-100"
-        >
-          <Menu className="h-6 w-6" />
-        </button>
       </header>
 
       {/* Mobile drawer ("More"): profile card, tiles to explore, account list */}
