@@ -39,6 +39,13 @@ export function levelForPoints(points: number, lang: Lang) {
   return { emoji: level.emoji, name: level[lang] };
 }
 
+/** Only same-site paths are accepted as a post-login destination (no open redirects). */
+export function safeNextPath(raw: unknown): string | null {
+  const value = typeof raw === "string" ? raw.trim() : "";
+  if (!value.startsWith("/") || value.startsWith("//") || value.startsWith("/\\") || value.length > 300) return null;
+  return value;
+}
+
 export function formatDate(date: Date | string, lang: Lang) {
   const d = typeof date === "string" ? new Date(date) : date;
   const locale = lang === "pt" ? "pt-BR" : lang === "es" ? "es-ES" : "en-US";
@@ -68,4 +75,16 @@ export function initials(name: string) {
 export function startOfTodayUTC() {
   const now = new Date();
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+}
+
+/** True when a database error is a Postgres unique-constraint violation (code 23505). */
+export function isUniqueViolation(error: unknown): boolean {
+  let current: unknown = error;
+  for (let depth = 0; current && depth < 5; depth++) {
+    if (typeof current === "object" && "code" in current && (current as { code?: unknown }).code === "23505") {
+      return true;
+    }
+    current = typeof current === "object" && "cause" in current ? (current as { cause?: unknown }).cause : null;
+  }
+  return false;
 }

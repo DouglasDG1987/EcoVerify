@@ -1,37 +1,44 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useState } from "react";
 import { updateSettingsAction } from "@/lib/actions/settings";
 import type { ActionState } from "@/lib/actions/auth";
 import { LANGS, t, type Lang } from "@/lib/i18n";
+import { THEMES, type Theme } from "@/lib/theme";
+import { Monitor, Moon, Sun } from "lucide-react";
+
+const THEME_ICONS = { system: Monitor, light: Sun, dark: Moon } as const;
 
 const initialState: ActionState = {};
 
 export function SettingsForm({
   language,
   fontSize,
+  theme,
   highContrast,
   reducedMotion,
   notificationsEnabled,
 }: {
   language: Lang;
   fontSize: "small" | "medium" | "large";
+  theme: Theme;
   highContrast: boolean;
   reducedMotion: boolean;
   notificationsEnabled: boolean;
 }) {
-  const [state, formAction, pending] = useActionState(updateSettingsAction, initialState);
   const [lang, setLang] = useState<Lang>(language);
   const [saved, setSaved] = useState(false);
-
-  useEffect(() => {
-    if (state && !pending) {
-      setSaved(true);
-      const timeout = setTimeout(() => setSaved(false), 2200);
-      return () => clearTimeout(timeout);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pending]);
+  const [, formAction, pending] = useActionState(
+    async (prev: ActionState, formData: FormData) => {
+      const result = await updateSettingsAction(prev, formData);
+      if (!result?.error) {
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2200);
+      }
+      return result;
+    },
+    initialState,
+  );
 
   const handleLanguageChange = (newLang: Lang) => {
     setLang(newLang);
@@ -78,6 +85,34 @@ export function SettingsForm({
         </div>
       </div>
 
+      <div>
+        <label className="mb-2 block text-sm font-semibold text-slate-700">{t(lang, "settings_theme")}</label>
+        <div className="grid grid-cols-3 gap-2">
+          {THEMES.map((value) => {
+            const Icon = THEME_ICONS[value];
+            return (
+              <label
+                key={value}
+                className="flex cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-slate-200 px-2 py-2.5 text-sm font-medium text-slate-600 sm:flex-row sm:gap-2 has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50 has-[:checked]:text-emerald-700"
+              >
+                <input
+                  type="radio"
+                  name="theme"
+                  value={value}
+                  defaultChecked={theme === value}
+                  // Instant preview; the choice is stored when the form is saved.
+                  onChange={() => (document.documentElement.dataset.theme = value)}
+                  className="sr-only"
+                />
+                <Icon className="h-4 w-4" aria-hidden="true" />
+                {t(lang, value === "system" ? "theme_system" : value === "light" ? "theme_light" : "theme_dark")}
+              </label>
+            );
+          })}
+        </div>
+        <p className="mt-2 text-xs text-slate-500">{t(lang, "theme_system_hint")}</p>
+      </div>
+
       <div className="space-y-3 border-t border-slate-100 pt-5">
         <ToggleRow name="highContrast" label={t(lang, "settings_high_contrast")} defaultChecked={highContrast} />
         <ToggleRow name="reducedMotion" label={t(lang, "settings_reduced_motion")} defaultChecked={reducedMotion} />
@@ -85,7 +120,7 @@ export function SettingsForm({
       </div>
 
       <div className="flex items-center gap-3 border-t border-slate-100 pt-5">
-        {saved && <span className="text-sm font-medium text-emerald-600">✓ Preferências salvas</span>}
+        {saved && <span className="text-sm font-medium text-emerald-600">{t(lang, "prefs_saved")}</span>}
         <button
           type="submit"
           disabled={pending}

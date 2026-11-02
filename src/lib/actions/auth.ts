@@ -1,18 +1,54 @@
 "use server";
 
-import { redirect } from "next/navigation";
+import { redirect, RedirectType } from "next/navigation";
+import { parseDeclaredWallet } from "@/lib/wallet-optional";
+import { PAYMENTS_ENABLED } from "@/lib/features";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { users } from "@/db/schema";
+import { isUniqueViolation, safeNextPath } from "@/lib/utils";
+import { headers } from "next/headers";
 import { createSession, destroySession, hashPassword, verifyPassword } from "@/lib/auth";
+import { forgiveLastHit, rateLimit, resetRateLimit } from "@/lib/rate-limit";
+import { isSeedEmail, seedAccountsAllowed } from "@/lib/staff-config";
+import { promoteOwnerIfNeeded } from "@/lib/admin-bootstrap";
+import { sendVerificationEmail } from "@/lib/account-email";
+import { createAuthToken } from "@/lib/auth-tokens";
+import { isSuspended } from "@/lib/cards";
+import { TERMS_VERSION } from "@/lib/legal";
+import { DEFAULT_LANG, isLang } from "@/lib/i18n";
+import { homeFor } from "@/lib/nav";
+import { moderatorsEnabled } from "@/lib/staff-config";
 
-export type ActionState = { error?: string };
+export type ActionState = { error?: string; success?: boolean };
+
+const MIN_PASSWORD_LENGTH = 8;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const FIFTEEN_MINUTES = 15 * 60 * 1000;
+
+async function clientIp() {
+  const headerList = await headers();
+  return headerList.get("x-forwarded-for")?.split(",")[0]?.trim() || headerList.get("x-real-ip") || "unknown";
+}
 
 export async function loginAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
 
   if (!email || !password) {
+    return { error: "invalid" };
+  }
+
+  // Brute-force protection: per e-mail and per IP.
+  const ip = await clientIp();
+  const emailKey = `login:email:${email}`;
+  const ipKey = `login:ip:${ip}`;
+  if (!rateLimit(emailKey, 8, FIFTEEN_MINUTES) || !rateLimit(ipKey, 30, FIFTEEN_MINUTES)) {
+    return { error: "too_many_attempts" };
+  }
+
+  // Seed accounts have a public password: never usable in production (ALLOW_SEED_ACCOUNTS overrides).
+  if (isSeedEmail(email) && !seedAccountsAllowed()) {
     return { error: "invalid" };
   }
 
@@ -25,13 +61,20 @@ export async function loginAction(_prev: ActionState, formData: FormData): Promi
   if (!valid) {
     return { error: "invalid" };
   }
+  resetRateLimit(emailKey);
+  // Only failed attempts count per IP (many people share one IP on school or mobile networks).
+  forgiveLastHit(ipKey);
 
-  if (user.isBanned) {
-    return { error: "banned" };
+  if (user.isBanned || isSuspended(user.suspendedUntil)) {
+    // No session: a short-lived token only lets the person read the reason and appeal.
+    const token = await createAuthToken(user.id, "ban_appeal");
+    redirect(`/conta-bloqueada?t=${token}`);
   }
 
+  const promoted = await promoteOwnerIfNeeded(user);
   await createSession(user.id);
-  redirect("/missions");
+  // replace: the Android back button must not return to the login screen.
+  redirect(safeNextPath(formData.get("next")) ?? (promoted ? "/admin" : homeFor(user.role, moderatorsEnabled())), RedirectType.replace);
 }
 
 export async function registerAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
@@ -39,11 +82,25 @@ export async function registerAction(_prev: ActionState, formData: FormData): Pr
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
 
-  if (!name || !email) {
+  if (!name || name.length > 200 || !EMAIL_PATTERN.test(email) || email.length > 255) {
     return { error: "invalid" };
   }
-  if (password.length < 6) {
+  if (password.length < MIN_PASSWORD_LENGTH || password.length > 200) {
     return { error: "weak_password" };
+  }
+  // LGPD: explicit acceptance of the Terms/Privacy Policy and minimum age (guardian if under 18).
+  if (formData.get("acceptTerms") !== "on") return { error: "terms_required" };
+  if (formData.get("ageConfirm") !== "on") return { error: "age_required" };
+  const rawLanguage = formData.get("language");
+  const language = isLang(rawLanguage) ? rawLanguage : DEFAULT_LANG;
+  // Optional FONE wallet (18+ only); it can also be added later in the profile.
+  const wallet = parseDeclaredWallet(formData.get("walletAddress"), formData.get("walletAdult") === "on");
+  if (wallet.error) return { error: `wallet_${wallet.error}` };
+
+  // Limits mass account creation (multiple accounts = multiple rewards). High enough for a whole
+  // class signing up together on the same school Wi-Fi (one shared IP).
+  if (!rateLimit(`register:ip:${await clientIp()}`, 40, 60 * 60 * 1000)) {
+    return { error: "too_many_attempts" };
   }
 
   const [existing] = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
@@ -52,17 +109,34 @@ export async function registerAction(_prev: ActionState, formData: FormData): Pr
   }
 
   const passwordHash = await hashPassword(password);
-  const [user] = await db
-    .insert(users)
-    .values({ name, email, passwordHash })
-    .returning();
+  let user: typeof users.$inferSelect;
+  try {
+    [user] = await db
+      .insert(users)
+      .values({
+        name,
+        email,
+        passwordHash,
+        language,
+        termsAcceptedAt: new Date(),
+        termsVersion: TERMS_VERSION,
+        declaredWalletAddress: wallet.address,
+        adultDeclaredAt: wallet.address ? new Date() : null,
+      })
+      .returning();
+  } catch (error) {
+    if (isUniqueViolation(error)) return { error: "email_exists" };
+    throw error;
+  }
 
   await createSession(user.id);
-  redirect("/wallet-setup");
+  // A failure to send must not block the sign-up: the user can resend from Settings.
+  await sendVerificationEmail(user).catch((error) => console.error("[email] verification", error));
+  redirect(safeNextPath(formData.get("next")) ?? (PAYMENTS_ENABLED ? "/wallet-setup" : "/missions"), RedirectType.replace);
 }
 
 export async function logoutAction() {
   "use server";
   await destroySession();
-  redirect("/login");
+  redirect("/login", RedirectType.replace);
 }

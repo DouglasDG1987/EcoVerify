@@ -13,6 +13,9 @@ node_modules
 # Production
 /build
 
+# Offline demo build (bundled into the demo APK)
+/demo/dist/
+
 # Misc
 .DS_Store
 *.pem
@@ -39,3 +42,7 @@ android/capacitor-cordova-android-plugins/
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
+
+# Local uploads (development storage)
+/storage/
+/public/uploads/

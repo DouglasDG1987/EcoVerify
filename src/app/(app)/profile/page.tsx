@@ -1,22 +1,48 @@
-import { eq, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
-import { submissions } from "@/db/schema";
+import { missions, rewardQueue, submissions, userCards } from "@/db/schema";
+import { badgesFor, personalImpact, weeklyStreak } from "@/lib/achievements";
+import { BadgesGrid, ImpactCard, StreakCard } from "@/components/profile/achievements";
+import { canReview, isStaffExperience } from "@/lib/nav";
+import { moderatorsEnabled } from "@/lib/staff-config";
+import { StaffWork, type StaffWorkStats } from "@/components/profile/staff-work";
 import { getCurrentUser } from "@/lib/auth";
 import { initials, formatDate, levelForPoints } from "@/lib/utils";
-import { t } from "@/lib/i18n";
-import { WalletEditor } from "@/components/profile/wallet-editor";
+import { t, tf, tx } from "@/lib/i18n";
+import { PAYMENTS_ENABLED } from "@/lib/features";
+import { getPayoutSettings } from "@/lib/payouts";
+import { splitOpenRewards } from "@/lib/payout-rules";
+import { WalletPanel } from "@/components/wallet/wallet-panel";
+import { ProfileDeclaredWallet } from "@/components/wallet/profile-declared-wallet";
+import { getFoneConfig } from "@/lib/fone-config";
+import { centsToFone, explorerTxUrl, shortHex, verifiedWallet, walletRequestState } from "@/lib/fone";
 import { logoutAction } from "@/lib/actions/auth";
+import { FoneAmount, FoneMark } from "@/components/brand/fone";
+import { MyCards } from "@/components/cards/my-cards";
+import { cardsOf } from "@/lib/cards-server";
 
-const roleLabels: Record<string, string> = {
-  citizen: "Cidadão(ã)",
-  moderator: "Moderador(a)",
-  admin: "Administrador(a)",
-};
 
 export default async function ProfilePage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
+
+  // Staff get their own profile: review work and permissions instead of points, level and cards.
+  const staff = isStaffExperience(user.role, moderatorsEnabled());
+  let staffStats: StaffWorkStats | null = null;
+  // Moderators keep the citizen profile and also see their review work and permissions.
+  if (staff || canReview(user.role, moderatorsEnabled())) {
+    const [work] = await db
+      .select({
+        approved: sql<number>`(count(*) filter (where ${submissions.status} = 'approved'))::int`,
+        rejected: sql<number>`(count(*) filter (where ${submissions.status} = 'rejected'))::int`,
+        lastWeek: sql<number>`(count(*) filter (where ${submissions.reviewedAt} >= now() - interval '7 days'))::int`,
+      })
+      .from(submissions)
+      .where(eq(submissions.reviewedBy, user.id));
+    const [given] = await db.select({ count: sql<number>`count(*)::int` }).from(userCards).where(eq(userCards.issuedBy, user.id));
+    staffStats = { approved: work?.approved ?? 0, rejected: work?.rejected ?? 0, lastWeek: work?.lastWeek ?? 0, cardsGiven: given?.count ?? 0 };
+  }
 
   const [approved] = await db
     .select({ count: sql<number>`count(*)::int` })
@@ -33,6 +59,43 @@ export default async function ProfilePage() {
 
   const level = levelForPoints(user.totalPoints, user.language);
 
+  // Citizen extras: weekly streak, personal impact and badges (approved actions only).
+  const actions = staff
+    ? []
+    : (
+        await db
+          .select({ category: missions.category, at: submissions.submittedAt, weightKg: submissions.weightKg, material: submissions.material, startsAt: missions.startsAt })
+          .from(submissions)
+          .innerJoin(missions, eq(submissions.missionId, missions.id))
+          .where(and(eq(submissions.userId, user.id), eq(submissions.status, "approved")))
+      ).map((row) => ({ category: row.category, at: row.at, weightKg: row.weightKg, material: row.material, isEvent: !!row.startsAt }));
+  const streak = weeklyStreak(actions);
+  const impact = personalImpact(actions);
+  const badges = badgesFor(actions, user.language);
+
+  const { treasury, explorerUrl } = getFoneConfig();
+  const verified = verifiedWallet(user);
+  const openRewards = await db
+    .select({ id: rewardQueue.id, foneAmount: rewardQueue.foneAmount, createdAt: rewardQueue.createdAt, holdReason: rewardQueue.holdReason })
+    .from(rewardQueue)
+    .where(and(eq(rewardQueue.userId, user.id), inArray(rewardQueue.status, ["pending", "processing", "failed"])));
+  const payoutSettings = await getPayoutSettings();
+  const split = splitOpenRewards(openRewards, payoutSettings);
+  const queued = { sum: centsToFone(split.payableCents + split.waitingCents + split.heldCents) };
+  const payouts = await db
+    .select({
+      txHash: rewardQueue.txHash,
+      total: sql<string>`sum(${rewardQueue.foneAmount})::text`,
+      paidAt: sql<string | null>`max(${rewardQueue.paidAt})`,
+    })
+    .from(rewardQueue)
+    .where(and(eq(rewardQueue.userId, user.id), eq(rewardQueue.status, "paid")))
+    .groupBy(rewardQueue.txHash)
+    .orderBy(desc(sql`max(${rewardQueue.paidAt})`))
+    .limit(10);
+  const queuedFone = Number(queued.sum);
+  const cards = await cardsOf(user.id);
+
   return (
     <div>
       <h1 className="text-2xl font-bold text-slate-900 md:text-3xl">{t(user.language, "profile_title")}</h1>
@@ -46,20 +109,31 @@ export default async function ProfilePage() {
             <h2 className="text-xl font-bold text-slate-900">{user.name}</h2>
             <p className="text-sm text-slate-500">{user.email}</p>
             <div className="mt-2 flex flex-wrap items-center justify-center gap-2 sm:justify-start">
-              <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
-                {level.emoji} {level.name}
-              </span>
+              {!staff && (
+                <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
+                  {level.emoji} {level.name}
+                </span>
+              )}
               <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
-                {roleLabels[user.role]}
+                {t(user.language, user.role === "admin" ? "role_admin" : user.role === "moderator" ? "role_moderator" : "role_citizen")}
               </span>
             </div>
           </div>
-          <div className="rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 px-6 py-4 text-center">
-            <p className="text-3xl font-extrabold text-emerald-700">{user.totalPoints}</p>
-            <p className="text-xs font-medium text-slate-500">{t(user.language, "points")}</p>
-          </div>
+          {!staff && (
+            <div className="rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 px-6 py-4 text-center">
+              <p className="text-3xl font-extrabold text-emerald-700">{user.totalPoints}</p>
+              <p className="text-xs font-medium text-slate-500">{t(user.language, "points")}</p>
+            </div>
+          )}
         </div>
 
+        {staffStats && (user.role === "admin" || user.role === "moderator") && (
+          <div className="mt-6">
+            <StaffWork lang={user.language} role={user.role} stats={staffStats} />
+          </div>
+        )}
+
+        {!staff && (
         <div className="mt-6 grid grid-cols-3 gap-3">
           <div className="rounded-xl bg-emerald-50 p-3 text-center">
             <p className="text-lg font-extrabold text-emerald-700">{approved.count}</p>
@@ -74,15 +148,121 @@ export default async function ProfilePage() {
             <p className="text-xs font-medium text-red-600">{t(user.language, "status_rejected")}</p>
           </div>
         </div>
+        )}
 
+        {!staff && (
+          <div className="mt-6 grid gap-4">
+            <StreakCard lang={user.language} streak={streak} />
+            <ImpactCard lang={user.language} name={user.name} impact={impact} streak={streak} badgesEarned={badges.filter((b) => b.earned).length} />
+            <BadgesGrid lang={user.language} badges={badges} />
+          </div>
+        )}
+
+        {/* Optional wallet address (no payouts yet): add, change or remove. */}
+        {!PAYMENTS_ENABLED && !staff && (
+          <div className="mt-6">
+            <ProfileDeclaredWallet lang={user.language} address={user.declaredWalletAddress} adultDeclared={!!user.adultDeclaredAt} />
+          </div>
+        )}
+
+        {/* Wallet and FONE payouts: hidden while payments are off (PAYMENTS_ENABLED). */}
+        {PAYMENTS_ENABLED && !staff && (
+          <>
         <div className="mt-6 border-t border-slate-100 pt-5">
-          <p className="mb-2 text-sm font-semibold text-slate-700">🪙 Carteira FONE</p>
-          <WalletEditor walletAddress={user.walletAddress} />
+          <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
+            <FoneMark size={18} /> {t(user.language, "wallet_section")}
+          </p>
+          {!verified && (
+            <p className="mb-3 text-xs text-slate-500">
+              {queuedFone > 0
+                ? t(user.language, "wallet_waiting_payouts").replace("{amount}", queued.sum)
+                : t(user.language, "wallet_none")}
+            </p>
+          )}
+          <WalletPanel
+            lang={user.language}
+            verifiedAddress={verified}
+            request={walletRequestState(user)}
+            treasury={treasury}
+            explorerUrl={explorerUrl}
+            adultDeclared={!!user.adultDeclaredAt}
+            suggestedAddress={user.declaredWalletAddress}
+          />
         </div>
+
+        {(payouts.length > 0 || (verified && queuedFone > 0)) && (
+          <div className="mt-6 border-t border-slate-100 pt-5">
+            <p className="mb-3 text-sm font-semibold text-slate-700">{t(user.language, "wallet_payouts_title")}</p>
+            <ul className="space-y-2">
+              {verified && split.payableCents > 0 && (
+                <li className="rounded-xl bg-amber-50 px-3 py-2 text-sm" data-testid="profile-fone-ready">
+                  <div className="flex items-center justify-between">
+                    <FoneAmount amount={centsToFone(split.payableCents)} className="font-bold text-amber-800" />
+                    <span className="text-xs font-semibold text-amber-700">{t(user.language, "wallet_payout_queued")}</span>
+                  </div>
+                  {split.belowMinimum && (
+                    <p className="mt-1 text-[11px] text-amber-800" data-testid="profile-fone-min">
+                      {tf(user.language, "payout_below_min", { min: payoutSettings.minPayoutFone.toFixed(2) })}
+                    </p>
+                  )}
+                </li>
+              )}
+              {verified && split.waitingCents > 0 && (
+                <li className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-sky-50 px-3 py-2 text-sm" data-testid="profile-fone-waiting">
+                  <FoneAmount amount={centsToFone(split.waitingCents)} className="font-bold text-sky-800" />
+                  <span className="text-xs font-semibold text-sky-700">
+                    {tf(user.language, "payout_waiting", {
+                      date: split.nextReleaseAt ? formatDate(split.nextReleaseAt, user.language) : "—",
+                    })}
+                  </span>
+                </li>
+              )}
+              {verified && split.heldCents > 0 && (
+                <li className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-slate-100 px-3 py-2 text-sm" data-testid="profile-fone-held">
+                  <FoneAmount amount={centsToFone(split.heldCents)} className="font-bold text-slate-700" />
+                  <span className="text-xs font-semibold text-slate-600">{t(user.language, "payout_held")}</span>
+                </li>
+              )}
+              {verified && queuedFone > 0 && (
+                <li className="px-1 text-[11px] text-slate-400">
+                  {tf(user.language, "payout_rules_note", { days: payoutSettings.holdDays, min: payoutSettings.minPayoutFone.toFixed(2) })}
+                </li>
+              )}
+              {payouts.map((payout) => (
+                <li key={payout.txHash ?? "none"} className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-emerald-50 px-3 py-2 text-sm">
+                  <FoneAmount amount={payout.total} className="font-bold text-emerald-800" />
+                  <span className="text-xs text-emerald-700">
+                    {t(user.language, "wallet_payout_paid")}
+                    {payout.paidAt ? ` · ${formatDate(payout.paidAt, user.language)}` : ""}
+                  </span>
+                  {payout.txHash && (
+                    <a
+                      href={explorerTxUrl(payout.txHash, explorerUrl)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full font-mono text-xs text-teal-700 hover:underline"
+                    >
+                      {shortHex(payout.txHash)} ↗
+                    </a>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+          </>
+        )}
 
         <div className="mt-5 border-t border-slate-100 pt-5 text-sm text-slate-500">
-          Na plataforma desde {formatDate(user.createdAt, user.language)}
+          {tx(user.language, "Na plataforma desde", "Member since", "En la plataforma desde")} {formatDate(user.createdAt, user.language)}
         </div>
+
+        {!staff && (
+          <div className="mt-6">
+            <MyCards lang={user.language} cards={cards} />
+          </div>
+        )}
 
         <form action={logoutAction} className="mt-6">
           <button

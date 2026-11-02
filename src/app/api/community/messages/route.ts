@@ -1,47 +1,28 @@
-import { NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
-import { db } from "@/db";
-import { communityChat, users, messageFavorites } from "@/db/schema";
+import { NextResponse, type NextRequest } from "next/server";
+import { isParticipant } from "@/lib/nav";
 import { getCurrentUser } from "@/lib/auth";
+import { fetchCommunityMessages, isCommunityMember } from "@/lib/community";
 
-export async function GET() {
+export const dynamic = "force-dynamic";
+
+export async function GET(request: NextRequest) {
   try {
     const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    // Same rule as the community page: the chat is for citizens.
+    if (!isParticipant(user.role)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
 
-    const messages = await db
-      .select({
-        id: communityChat.id,
-        message: communityChat.message,
-        messageType: communityChat.messageType,
-        mediaUrl: communityChat.mediaUrl,
-        replyToId: communityChat.replyToId,
-        replyToMessage: communityChat.replyToMessage,
-        userId: communityChat.userId,
-        userName: users.name,
-        createdAt: communityChat.createdAt,
-        editedAt: communityChat.editedAt,
-        deletedAt: communityChat.deletedAt,
-        deleteForEveryone: communityChat.deleteForEveryone,
-      })
-      .from(communityChat)
-      .leftJoin(users, eq(communityChat.userId, users.id))
-      .orderBy(communityChat.createdAt)
-      .limit(50);
+    // Each organization has its own chat: only its members can read it.
+    const organizationId = request.nextUrl.searchParams.get("org") ?? "";
+    if (!(await isCommunityMember(user.id, organizationId))) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
 
-    const userFavorites = await db
-      .select({ messageId: messageFavorites.messageId })
-      .from(messageFavorites)
-      .where(eq(messageFavorites.userId, user.id));
-
-    const favoriteIds = userFavorites.map((f) => f.messageId);
-
-    return NextResponse.json({
-      messages,
-      favoriteIds,
-    });
+    return NextResponse.json(await fetchCommunityMessages(user.id, organizationId));
   } catch (error) {
     console.error("Error fetching messages:", error);
     return NextResponse.json({ error: "Failed to fetch messages" }, { status: 500 });

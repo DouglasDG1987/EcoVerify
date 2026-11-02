@@ -6,6 +6,35 @@ export const LANGS: { value: Lang; label: string; flag: string }[] = [
   { value: "es", label: "Español", flag: "🇪🇸" },
 ];
 
+/** Language of new accounts and of visitors who haven't picked one yet. */
+export const DEFAULT_LANG: Lang = "en";
+
+/** Cookie with the language a visitor picked before signing in (read by src/lib/guest-lang.ts). */
+export const LANG_COOKIE = "ev-lang";
+
+export function isLang(value: unknown): value is Lang {
+  return value === "pt" || value === "en" || value === "es";
+}
+
+/** Inline text in three languages (screens with few strings of their own, e.g. the admin panel). */
+export function tx(lang: Lang, pt: string, en: string, es: string): string {
+  return lang === "en" ? en : lang === "es" ? es : pt;
+}
+
+/** Text in the person's language when a translation exists, otherwise the original (Portuguese) one. */
+export function inLang(lang: Lang, base: string, en?: string | null, es?: string | null): string;
+export function inLang(lang: Lang, base: string | null | undefined, en?: string | null, es?: string | null): string | null;
+export function inLang(lang: Lang, base: string | null | undefined, en?: string | null, es?: string | null) {
+  if (lang === "en" && en) return en;
+  if (lang === "es" && es) return es;
+  return base ?? null;
+}
+
+/** Browser only: remembers the visitor's choice so the next pages (and the sign-up) use it. */
+export function rememberGuestLang(lang: Lang) {
+  document.cookie = `${LANG_COOKIE}=${lang}; path=/; max-age=31536000; samesite=lax`;
+}
+
 const dict = {
   appName: { pt: "EcoVerify", en: "EcoVerify", es: "EcoVerify" },
   tagline: {
@@ -14,7 +43,7 @@ const dict = {
     es: "Tus acciones sostenibles, reconocidas y recompensadas.",
   },
   nav_missions: { pt: "Missões", en: "Missions", es: "Misiones" },
-  nav_submissions: { pt: "Minhas Submissões", en: "My Submissions", es: "Mis Envíos" },
+  nav_submissions: { pt: "Meus envios", en: "My Submissions", es: "Mis Envíos" },
   nav_ranking: { pt: "Ranking", en: "Ranking", es: "Clasificación" },
   nav_community: { pt: "Comunidade", en: "Community", es: "Comunidad" },
   nav_moderation: { pt: "Moderação", en: "Moderation", es: "Moderación" },
@@ -22,7 +51,17 @@ const dict = {
   nav_notifications: { pt: "Notificações", en: "Notifications", es: "Notificaciones" },
   nav_profile: { pt: "Perfil", en: "Profile", es: "Perfil" },
   nav_settings: { pt: "Configurações", en: "Settings", es: "Configuración" },
+  nav_benefits: { pt: "Benefícios", en: "Perks", es: "Beneficios" },
+  nav_quiz: { pt: "Quiz do dia", en: "Daily quiz", es: "Quiz del día" },
+  nav_dumps: { pt: "Lixo irregular", en: "Illegal dumping", es: "Basura irregular" },
+  nav_map: { pt: "Mapa", en: "Map", es: "Mapa" },
+  nav_orgs: { pt: "Organizações", en: "Organizations", es: "Organizaciones" },
   nav_logout: { pt: "Sair", en: "Log out", es: "Salir" },
+  nav_group_main: { pt: "Dia a dia", en: "Everyday", es: "Día a día" },
+  nav_group_explore: { pt: "Explorar", en: "Explore", es: "Explorar" },
+  nav_group_staff: { pt: "Equipe", en: "Team", es: "Equipo" },
+  nav_group_account: { pt: "Sua conta", en: "Your account", es: "Tu cuenta" },
+  nav_see_profile: { pt: "Ver perfil", en: "View profile", es: "Ver perfil" },
   login_title: { pt: "Entrar", en: "Sign in", es: "Iniciar sesión" },
   login_email: { pt: "E-mail", en: "Email", es: "Correo" },
   login_password: { pt: "Senha", en: "Password", es: "Contraseña" },
@@ -45,9 +84,9 @@ const dict = {
   register_has_account: { pt: "Já tem conta?", en: "Already have an account?", es: "¿Ya tienes cuenta?" },
   register_login: { pt: "Entrar", en: "Sign in", es: "Iniciar sesión" },
   register_password_hint: {
-    pt: "Mínimo de 6 caracteres.",
-    en: "Minimum 6 characters.",
-    es: "Mínimo 6 caracteres.",
+    pt: "Mínimo de 8 caracteres.",
+    en: "Minimum 8 characters.",
+    es: "Mínimo 8 caracteres.",
   },
   register_email_exists: {
     pt: "Este e-mail já está cadastrado.",
@@ -55,17 +94,127 @@ const dict = {
     es: "Este correo ya está registrado.",
   },
   wallet_title: { pt: "Configure sua carteira FONE", en: "Set up your FONE wallet", es: "Configura tu billetera FONE" },
+  wallet_section: { pt: "Carteira FONE", en: "FONE wallet", es: "Billetera FONE" },
   wallet_subtitle: {
-    pt: "É para lá que suas recompensas em FONE vão. Você pode criar uma carteira nova ou importar uma já existente.",
-    en: "That's where your FONE rewards go. You can create a new wallet or import an existing one.",
-    es: "Ahí es donde van tus recompensas en FONE. Puedes crear una billetera nueva o importar una existente.",
+    pt: "É para lá que suas recompensas em FONE vão. Use a Fone Wallet, o app oficial da rede Fone, e vincule o endereço aqui.",
+    en: "That's where your FONE rewards go. Use Fone Wallet, the official Fone network app, and link its address here.",
+    es: "Ahí van tus recompensas en FONE. Usa Fone Wallet, la app oficial de la red Fone, y vincula su dirección aquí.",
   },
-  wallet_create: { pt: "Criar carteira nova", en: "Create new wallet", es: "Crear billetera nueva" },
   wallet_import: { pt: "Já tenho uma carteira", en: "I already have a wallet", es: "Ya tengo una billetera" },
   wallet_address_placeholder: {
     pt: "Cole o endereço da sua carteira",
     en: "Paste your wallet address",
     es: "Pega la dirección de tu billetera",
+  },
+  wallet_get_app: { pt: "Ainda não tem? Baixe a Fone Wallet", en: "Don't have one? Get Fone Wallet", es: "¿No tienes? Descarga Fone Wallet" },
+  wallet_android: { pt: "Android (Google Play)", en: "Android (Google Play)", es: "Android (Google Play)" },
+  wallet_ios: { pt: "iPhone (App Store)", en: "iPhone (App Store)", es: "iPhone (App Store)" },
+  wallet_address_label: { pt: "Endereço da sua carteira FONE", en: "Your FONE wallet address", es: "Dirección de tu billetera FONE" },
+  wallet_address_hint: {
+    pt: "Na Fone Wallet, toque em Receber e copie o endereço (64 caracteres, começa com \"f\").",
+    en: "In Fone Wallet, tap Receive and copy the address (64 characters, starts with \"f\").",
+    es: "En Fone Wallet, toca Recibir y copia la dirección (64 caracteres, empieza con \"f\").",
+  },
+  wallet_adult_label: {
+    pt: "Declaro que tenho 18 anos ou mais. Recompensas em FONE são só para maiores de idade; menores participam com pontos e ranking.",
+    en: "I declare that I am 18 or older. FONE rewards are for adults only; minors take part with points and ranking.",
+    es: "Declaro que tengo 18 años o más. Las recompensas en FONE son solo para mayores de edad; los menores participan con puntos y ranking.",
+  },
+  wallet_link: { pt: "Vincular carteira", en: "Link wallet", es: "Vincular billetera" },
+  wallet_pending_title: {
+    pt: "Falta só provar que a carteira é sua",
+    en: "Just prove the wallet is yours",
+    es: "Solo falta demostrar que la billetera es tuya",
+  },
+  wallet_step_send: {
+    pt: "Na Fone Wallet, envie exatamente {amount} FONE (com os centavos) para o endereço de verificação do EcoVerify:",
+    en: "In Fone Wallet, send exactly {amount} FONE (including the decimals) to the EcoVerify verification address:",
+    es: "En Fone Wallet, envía exactamente {amount} FONE (con los decimales) a la dirección de verificación de EcoVerify:",
+  },
+  wallet_step_from: {
+    pt: "O envio tem que sair da carteira que você informou:",
+    en: "The transfer must come from the wallet you entered:",
+    es: "El envío debe salir de la billetera que indicaste:",
+  },
+  wallet_step_why: {
+    pt: "Só o dono consegue enviar FONE de uma carteira; é assim que confirmamos que ela é sua. A taxa da rede é cobrada à parte.",
+    en: "Only the owner can send FONE from a wallet; that's how we confirm it's yours. The network fee is charged separately.",
+    es: "Solo el dueño puede enviar FONE desde una billetera; así confirmamos que es tuya. La comisión de la red se cobra aparte.",
+  },
+  wallet_copy: { pt: "Copiar", en: "Copy", es: "Copiar" },
+  wallet_copied: { pt: "Copiado!", en: "Copied!", es: "¡Copiado!" },
+  wallet_tx_label: {
+    pt: "Já enviou? Cole o hash da transação (opcional, agiliza a conferência)",
+    en: "Already sent? Paste the transaction hash (optional, speeds up the check)",
+    es: "¿Ya enviaste? Pega el hash de la transacción (opcional, agiliza la revisión)",
+  },
+  wallet_tx_placeholder: { pt: "Hash da transação (64 caracteres)", en: "Transaction hash (64 characters)", es: "Hash de la transacción (64 caracteres)" },
+  wallet_tx_submit: { pt: "Enviar hash", en: "Send hash", es: "Enviar hash" },
+  wallet_tx_saved: {
+    pt: "Recebemos! Um administrador vai conferir a transferência no explorer da Fone.",
+    en: "Got it! An admin will check the transfer on the Fone explorer.",
+    es: "¡Recibido! Un administrador revisará la transferencia en el explorador de Fone.",
+  },
+  wallet_expires: { pt: "Este valor vale até {date}.", en: "This amount is valid until {date}.", es: "Este monto es válido hasta {date}." },
+  wallet_expired: {
+    pt: "O prazo deste valor terminou. Gere um novo valor antes de enviar.",
+    en: "This amount has expired. Generate a new one before sending.",
+    es: "El plazo de este monto terminó. Genera uno nuevo antes de enviar.",
+  },
+  wallet_renew: { pt: "Gerar novo valor", en: "Generate new amount", es: "Generar nuevo monto" },
+  wallet_cancel_request: { pt: "Cancelar pedido", en: "Cancel request", es: "Cancelar solicitud" },
+  wallet_unavailable: {
+    pt: "A verificação de carteiras ainda não foi aberta. Seu pedido fica salvo e você será avisado quando puder enviar.",
+    en: "Wallet verification isn't open yet. Your request is saved and you'll be notified when you can send.",
+    es: "La verificación de billeteras aún no está abierta. Tu solicitud queda guardada y te avisaremos cuando puedas enviar.",
+  },
+  wallet_verified: { pt: "Carteira verificada", en: "Verified wallet", es: "Billetera verificada" },
+  wallet_verified_hint: {
+    pt: "Suas recompensas em FONE são enviadas para este endereço.",
+    en: "Your FONE rewards are sent to this address.",
+    es: "Tus recompensas en FONE se envían a esta dirección.",
+  },
+  wallet_change: { pt: "Trocar carteira", en: "Change wallet", es: "Cambiar billetera" },
+  wallet_change_hint: {
+    pt: "A carteira atual continua recebendo até a nova ser verificada.",
+    en: "Your current wallet keeps receiving until the new one is verified.",
+    es: "La billetera actual sigue recibiendo hasta que la nueva sea verificada.",
+  },
+  wallet_view_explorer: { pt: "Ver no explorer", en: "View on explorer", es: "Ver en el explorador" },
+  wallet_none: {
+    pt: "Nenhuma carteira verificada. Seus FONE ficam guardados na fila até você vincular uma.",
+    en: "No verified wallet. Your FONE stays in the queue until you link one.",
+    es: "Ninguna billetera verificada. Tus FONE quedan en la cola hasta que vincules una.",
+  },
+  wallet_legacy_notice: {
+    pt: "O endereço salvo antes não é uma carteira FONE nativa verificada e não recebe pagamentos. Vincule a carteira da sua Fone Wallet.",
+    en: "The address saved earlier is not a verified native FONE wallet and receives no payouts. Link your Fone Wallet address.",
+    es: "La dirección guardada antes no es una billetera FONE nativa verificada y no recibe pagos. Vincula la dirección de tu Fone Wallet.",
+  },
+  wallet_waiting_payouts: {
+    pt: "{amount} FONE aguardando uma carteira verificada.",
+    en: "{amount} FONE waiting for a verified wallet.",
+    es: "{amount} FONE esperando una billetera verificada.",
+  },
+  wallet_payouts_title: { pt: "Pagamentos em FONE", en: "FONE payouts", es: "Pagos en FONE" },
+  wallet_payout_paid: { pt: "Recebido", en: "Received", es: "Recibido" },
+  wallet_payout_queued: { pt: "Na fila", en: "Queued", es: "En cola" },
+  wallet_error_adult: {
+    pt: "Para receber FONE é preciso ter 18 anos ou mais e marcar a declaração.",
+    en: "You must be 18 or older and tick the declaration to receive FONE.",
+    es: "Para recibir FONE debes tener 18 años o más y marcar la declaración.",
+  },
+  wallet_error_already: { pt: "Esta já é a sua carteira verificada.", en: "This is already your verified wallet.", es: "Esta ya es tu billetera verificada." },
+  wallet_error_tx: {
+    pt: "Hash inválido. Ele tem 64 caracteres (0-9 e a-f).",
+    en: "Invalid hash. It has 64 characters (0-9 and a-f).",
+    es: "Hash inválido. Tiene 64 caracteres (0-9 y a-f).",
+  },
+  wallet_error_tx_in_use: { pt: "Este hash já foi usado.", en: "This hash has already been used.", es: "Este hash ya fue usado." },
+  wallet_error_later: {
+    pt: "Muitos pedidos de verificação abertos agora. Tente mais tarde.",
+    en: "Too many open verification requests right now. Try again later.",
+    es: "Demasiadas solicitudes de verificación abiertas. Inténtalo más tarde.",
   },
   wallet_skip: { pt: "Pular por agora", en: "Skip for now", es: "Omitir por ahora" },
   wallet_continue: { pt: "Continuar", en: "Continue", es: "Continuar" },
@@ -97,7 +246,7 @@ const dict = {
     es: "Usar mi ubicación actual",
   },
   submission_success: { pt: "Comprovação enviada!", en: "Proof submitted!", es: "¡Comprobante enviado!" },
-  my_submissions_title: { pt: "Minhas Submissões", en: "My Submissions", es: "Mis Envíos" },
+  my_submissions_title: { pt: "Meus envios", en: "My Submissions", es: "Mis Envíos" },
   submissions_empty: {
     pt: "Você ainda não enviou nenhuma comprovação.",
     en: "You haven't submitted any proof yet.",
@@ -114,6 +263,7 @@ const dict = {
   },
   points: { pt: "pontos", en: "points", es: "puntos" },
   notifications_title: { pt: "Notificações", en: "Notifications", es: "Notificaciones" },
+  mark_all_read: { pt: "Marcar todas como lidas", en: "Mark all as read", es: "Marcar todas como leídas" },
   notifications_empty: {
     pt: "Nenhuma notificação encontrada.",
     en: "No notifications found.",
@@ -134,7 +284,7 @@ const dict = {
   approve: { pt: "Aprovar", en: "Approve", es: "Aprobar" },
   reject: { pt: "Rejeitar", en: "Reject", es: "Rechazar" },
   own_submission_warning: {
-    pt: "Você não pode moderar sua própria submissão.",
+    pt: "Você não pode moderar seu próprio envio.",
     en: "You cannot moderate your own submission.",
     es: "No puedes moderar tu propio envío.",
   },
@@ -150,6 +300,273 @@ const dict = {
   settings_title: { pt: "Configurações", en: "Settings", es: "Configuración" },
   settings_language: { pt: "Idioma", en: "Language", es: "Idioma" },
   settings_font_size: { pt: "Tamanho da fonte", en: "Font size", es: "Tamaño de fuente" },
+  ai_title: { pt: "Verificação automática", en: "Automatic verification", es: "Verificación automática" },
+  ai_queued: { pt: "Analisando a foto…", en: "Analysing the photo…", es: "Analizando la foto…" },
+  ai_failed: {
+    pt: "A IA não conseguiu analisar esta foto (limite diário gratuito ou falha). Decida manualmente ou tente de novo.",
+    en: "The AI could not analyse this photo (free daily limit or failure). Decide manually or try again.",
+    es: "La IA no pudo analizar esta foto (límite diario gratuito o falla). Decide manualmente o inténtalo de nuevo.",
+  },
+  ai_retry: { pt: "Analisar de novo", en: "Analyse again", es: "Analizar de nuevo" },
+  ai_unavailable: {
+    pt: "A verificação automática está desligada ou sem chave configurada.",
+    en: "Automatic verification is off or has no key configured.",
+    es: "La verificación automática está apagada o sin clave configurada.",
+  },
+  ai_suggests_approve: { pt: "IA sugere aprovar", en: "AI suggests approving", es: "La IA sugiere aprobar" },
+  ai_suggests_reject: { pt: "IA sugere rejeitar", en: "AI suggests rejecting", es: "La IA sugiere rechazar" },
+  ai_suggests_review: { pt: "IA pede revisão humana", en: "AI asks for human review", es: "La IA pide revisión humana" },
+  ai_confidence: { pt: "confiança", en: "confidence", es: "confianza" },
+  ai_seen: { pt: "O que a IA viu", en: "What the AI saw", es: "Lo que vio la IA" },
+  ai_flag_similar: {
+    pt: "Foto muito parecida com outra já enviada",
+    en: "Photo very similar to one already sent",
+    es: "Foto muy parecida a otra ya enviada",
+  },
+  ai_flag_faces: {
+    pt: "Há rostos reconhecíveis (cuidado com a privacidade)",
+    en: "Recognisable faces (mind privacy)",
+    es: "Hay rostros reconocibles (cuidado con la privacidad)",
+  },
+  web_found_title: {
+    pt: "🌐 A mesma foto foi encontrada na internet",
+    en: "🌐 The same photo was found on the internet",
+    es: "🌐 La misma foto se encontró en internet",
+  },
+  web_found_hint: {
+    pt: "Busca reversa automática (Google Cloud Vision). Abra os links e confira: pode ser a própria pessoa que publicou a foto antes.",
+    en: "Automatic reverse image search (Google Cloud Vision). Open the links and check: the person may have published the photo before.",
+    es: "Búsqueda inversa automática (Google Cloud Vision). Abre los enlaces y revisa: puede ser la propia persona quien publicó la foto antes.",
+  },
+  web_partial: {
+    pt: "🌐 Partes parecidas com fotos da internet ({count}). Sinal fraco: cenas comuns também aparecem. Não aprova sozinho.",
+    en: "🌐 Parts similar to photos on the internet ({count}). Weak signal: common scenes also match. Not approved automatically.",
+    es: "🌐 Partes parecidas a fotos de internet ({count}). Señal débil: escenas comunes también coinciden. No se aprueba sola.",
+  },
+  web_none: { pt: "🌐 Busca reversa: nada encontrado na internet.", en: "🌐 Reverse search: nothing found on the internet.", es: "🌐 Búsqueda inversa: nada encontrado en internet." },
+  web_failed: {
+    pt: "🌐 A busca reversa falhou nesta foto. Use o Google Lens se desconfiar.",
+    en: "🌐 The reverse search failed for this photo. Use Google Lens if in doubt.",
+    es: "🌐 La búsqueda inversa falló con esta foto. Usa Google Lens si dudas.",
+  },
+  internet_flag_title: {
+    pt: "Possível cópia da internet",
+    en: "Possible copy from the internet",
+    es: "Posible copia de internet",
+  },
+  internet_flag_signs: { pt: "Sinais vistos pela IA", en: "Signs seen by the AI", es: "Señales vistas por la IA" },
+  internet_flag_hint: {
+    pt: "A IA não decide sozinha. Confira com uma busca reversa: baixe a foto e envie no Google Lens (ou arraste a imagem para lá). Se a mesma foto aparecer em outro site, rejeite explicando o que encontrou.",
+    en: "The AI does not decide alone. Check it with a reverse image search: download the photo and upload it to Google Lens (or drag the image there). If the same photo shows up on another site, reject it explaining what you found.",
+    es: "La IA no decide sola. Compruébalo con una búsqueda inversa: descarga la foto y súbela a Google Lens (o arrastra la imagen allí). Si la misma foto aparece en otro sitio, recházala explicando lo que encontraste.",
+  },
+  internet_download: { pt: "Baixar foto", en: "Download photo", es: "Descargar foto" },
+  internet_lens: { pt: "Abrir Google Lens", en: "Open Google Lens", es: "Abrir Google Lens" },
+  internet_explain_label: {
+    pt: "Sua explicação para a pessoa (obrigatória)",
+    en: "Your explanation to the person (required)",
+    es: "Tu explicación para la persona (obligatoria)",
+  },
+  internet_explain_placeholder: {
+    pt: "Ex.: a mesma foto aparece em um site de banco de imagens, com marca d'água no centro.",
+    en: "E.g. the same photo appears on a stock photo site, with a watermark in the middle.",
+    es: "Ej.: la misma foto aparece en un sitio de banco de imágenes, con marca de agua en el centro.",
+  },
+  internet_explain_required: {
+    pt: "Esta foto foi sinalizada como possível cópia da internet: escreva com suas palavras o que você encontrou (pelo menos 15 caracteres, além do motivo pronto).",
+    en: "This photo was flagged as a possible internet copy: write in your own words what you found (at least 15 characters, besides the ready-made reason).",
+    es: "Esta foto fue marcada como posible copia de internet: escribe con tus palabras lo que encontraste (al menos 15 caracteres, además del motivo listo).",
+  },
+  card_give_label: {
+    pt: "🟨 Dar cartão amarelo (tentativa de fraude)",
+    en: "🟨 Give a yellow card (fraud attempt)",
+    es: "🟨 Dar tarjeta amarilla (intento de fraude)",
+  },
+  card_give_hint: {
+    pt: "Só para quem tentou enganar, nunca para erro honesto. A pessoa recebe o aviso com a sua explicação e pode contestar. 3 cartões válidos = 14 dias de suspensão.",
+    en: "Only for someone who tried to cheat, never for an honest mistake. The person is told, with your explanation, and can appeal. 3 valid cards = 14-day suspension.",
+    es: "Solo para quien intentó engañar, nunca por un error honesto. La persona recibe el aviso con tu explicación y puede apelar. 3 tarjetas válidas = 14 días de suspensión.",
+  },
+  card_note_short: {
+    pt: "Para dar cartão, explique com pelo menos 15 caracteres.",
+    en: "To give a card, explain in at least 15 characters.",
+    es: "Para dar tarjeta, explica con al menos 15 caracteres.",
+  },
+  cards_title: { pt: "Meus cartões", en: "My cards", es: "Mis tarjetas" },
+  cards_none: {
+    pt: "Nenhum cartão. Continue assim! 🌱",
+    en: "No cards. Keep it up! 🌱",
+    es: "Ninguna tarjeta. ¡Sigue así! 🌱",
+  },
+  cards_rules: {
+    pt: "Cartão amarelo é dado por uma pessoa da equipe quando há tentativa de fraude (foto da internet, de tela, reaproveitada, localização falsa...). Vale por 6 meses. Com 3 válidos, a conta fica suspensa por 14 dias e os FONE pendentes ficam guardados. Reincidência pode levar a cartão vermelho (bloqueio).",
+    en: "A team member gives a yellow card when there is a fraud attempt (photo from the internet, of a screen, reused, fake location...). It lasts 6 months. With 3 valid cards the account is suspended for 14 days and pending FONE is kept. Repeat offences may lead to a red card (block).",
+    es: "Un miembro del equipo da tarjeta amarilla cuando hay intento de fraude (foto de internet, de pantalla, reutilizada, ubicación falsa...). Vale 6 meses. Con 3 válidas, la cuenta se suspende 14 días y los FONE pendientes se guardan. La reincidencia puede llevar a tarjeta roja (bloqueo).",
+  },
+  card_yellow: { pt: "Cartão amarelo", en: "Yellow card", es: "Tarjeta amarilla" },
+  card_red: { pt: "Cartão vermelho", en: "Red card", es: "Tarjeta roja" },
+  card_valid_until: { pt: "Vale até", en: "Valid until", es: "Válida hasta" },
+  card_expired: { pt: "Expirado", en: "Expired", es: "Expirada" },
+  card_cancelled: { pt: "Cancelado", en: "Cancelled", es: "Cancelada" },
+  card_used_suspension: { pt: "Já cumprido (suspensão)", en: "Served (suspension)", es: "Cumplida (suspensión)" },
+  card_appeal: { pt: "Contestar", en: "Appeal", es: "Apelar" },
+  card_appeal_placeholder: {
+    pt: "Explique o que aconteceu e como provar (ex.: tenho a foto original no celular, com data e local).",
+    en: "Explain what happened and how to prove it (e.g. I have the original photo on my phone, with date and place).",
+    es: "Explica lo que pasó y cómo probarlo (ej.: tengo la foto original en el celular, con fecha y lugar).",
+  },
+  card_appeal_sent: {
+    pt: "Contestação enviada. Um administrador vai analisar.",
+    en: "Appeal sent. An administrator will review it.",
+    es: "Apelación enviada. Un administrador la analizará.",
+  },
+  card_appeal_kept: {
+    pt: "A equipe analisou sua contestação e manteve o cartão.",
+    en: "The team reviewed your appeal and kept the card.",
+    es: "El equipo analizó tu apelación y mantuvo la tarjeta.",
+  },
+  card_revoked_title: { pt: "✅ Cartão cancelado", en: "✅ Card cancelled", es: "✅ Tarjeta cancelada" },
+  card_revoked_message: {
+    pt: "A equipe cancelou o seu cartão ({reason}). Ele não conta mais. Obrigado pela paciência!",
+    en: "The team cancelled your card ({reason}). It no longer counts. Thanks for your patience!",
+    es: "El equipo canceló tu tarjeta ({reason}). Ya no cuenta. ¡Gracias por tu paciencia!",
+  },
+  card_kept_title: { pt: "Cartão mantido", en: "Card kept", es: "Tarjeta mantenida" },
+  card_kept_message: {
+    pt: "A equipe analisou sua contestação e manteve o cartão ({reason}).",
+    en: "The team reviewed your appeal and kept the card ({reason}).",
+    es: "El equipo analizó tu apelación y mantuvo la tarjeta ({reason}).",
+  },
+  suspension_lifted_title: { pt: "✅ Suspensão encerrada", en: "✅ Suspension ended", es: "✅ Suspensión terminada" },
+  suspension_lifted_message: {
+    pt: "A equipe encerrou a suspensão da sua conta. Você já pode entrar de novo.",
+    en: "The team ended your account suspension. You can sign in again.",
+    es: "El equipo terminó la suspensión de tu cuenta. Ya puedes iniciar sesión.",
+  },
+  staff_repeat_title: { pt: "🟥 Reincidência", en: "🟥 Repeat offence", es: "🟥 Reincidencia" },
+  staff_repeat_message: {
+    pt: "{name} recebeu um cartão amarelo menos de 6 meses depois de uma suspensão. Veja em Admin → Usuários e decida sobre um cartão vermelho.",
+    en: "{name} got a yellow card less than 6 months after a suspension. See Admin → Users and decide on a red card.",
+    es: "{name} recibió una tarjeta amarilla menos de 6 meses después de una suspensión. Mira Admin → Usuarios y decide sobre una tarjeta roja.",
+  },
+  staff_card_appeal_title: { pt: "⚖️ Contestação de cartão", en: "⚖️ Card appeal", es: "⚖️ Apelación de tarjeta" },
+  staff_card_appeal_message: {
+    pt: "{name} contestou um cartão. Veja em Admin → Usuários.",
+    en: "{name} appealed a card. See Admin → Users.",
+    es: "{name} apeló una tarjeta. Mira Admin → Usuarios.",
+  },
+  suspended_title: { pt: "Sua conta está suspensa", en: "Your account is suspended", es: "Tu cuenta está suspendida" },
+  suspended_intro: {
+    pt: "Você recebeu 3 cartões amarelos válidos. A conta volta a funcionar sozinha na data abaixo. Seus pontos continuam e os FONE pendentes ficam guardados.",
+    en: "You got 3 valid yellow cards. The account works again by itself on the date below. Your points stay and pending FONE is kept.",
+    es: "Recibiste 3 tarjetas amarillas válidas. La cuenta vuelve a funcionar sola en la fecha de abajo. Tus puntos siguen y los FONE pendientes se guardan.",
+  },
+  suspended_until: { pt: "Volta em", en: "Back on", es: "Vuelve el" },
+  submit_internet_warning: {
+    pt: "Envie só fotos tiradas por você. Fotos copiadas da internet são detectadas e analisadas pela equipe.",
+    en: "Only send photos you took. Photos copied from the internet are detected and reviewed by the team.",
+    es: "Envía solo fotos tomadas por ti. Las fotos copiadas de internet son detectadas y analizadas por el equipo.",
+  },
+  staff_internet_title: {
+    pt: "⚠️ Possível foto da internet",
+    en: "⚠️ Possible photo from the internet",
+    es: "⚠️ Posible foto de internet",
+  },
+  staff_internet_message: {
+    pt: "A comprovação de {name} para \"{mission}\" pode ter sido copiada da internet. Ela está no topo da fila da Moderação esperando sua análise.",
+    en: "{name}'s proof for \"{mission}\" may have been copied from the internet. It is at the top of the Moderation queue waiting for your review.",
+    es: "La comprobación de {name} para \"{mission}\" puede haber sido copiada de internet. Está al inicio de la cola de Moderación esperando tu análisis.",
+  },
+  ai_rules_only: {
+    pt: "Só as regras locais rodaram (sem IA configurada).",
+    en: "Only local rules ran (no AI configured).",
+    es: "Solo corrieron las reglas locales (sin IA configurada).",
+  },
+  appeal_badge: { pt: "Contestação", en: "Appeal", es: "Apelación" },
+  appeal_from_user: {
+    pt: "O usuário contestou a rejeição automática:",
+    en: "The user appealed the automatic rejection:",
+    es: "El usuario apeló el rechazo automático:",
+  },
+  appeal_previous_reason: { pt: "Motivo dado pela IA", en: "Reason given by the AI", es: "Motivo dado por la IA" },
+  ai_recent_title: { pt: "Decisões automáticas recentes", en: "Recent automatic decisions", es: "Decisiones automáticas recientes" },
+  ai_recent_hint: {
+    pt: "Para auditoria: o que a IA aprovou ou rejeitou sozinha. Rejeições podem ser contestadas pelo usuário.",
+    en: "For auditing: what the AI approved or rejected on its own. Users can appeal rejections.",
+    es: "Para auditoría: lo que la IA aprobó o rechazó sola. Los usuarios pueden apelar los rechazos.",
+  },
+  ai_mode_auto: {
+    pt: "IA ligada: aprova e rejeita sozinha os casos claros; o resto vem para cá com sugestão.",
+    en: "AI on: approves and rejects clear cases on its own; the rest comes here with a suggestion.",
+    es: "IA encendida: aprueba y rechaza sola los casos claros; el resto llega aquí con sugerencia.",
+  },
+  ai_mode_suggest: {
+    pt: "IA em modo sugestão: analisa todas as fotos, mas quem decide é a moderação.",
+    en: "AI in suggestion mode: analyses every photo, but moderators decide.",
+    es: "IA en modo sugerencia: analiza todas las fotos, pero decide la moderación.",
+  },
+  ai_mode_off: {
+    pt: "Verificação automática desligada: todas as comprovações são decididas pela moderação.",
+    en: "Automatic verification off: moderators decide every proof.",
+    es: "Verificación automática apagada: la moderación decide todas las comprobaciones.",
+  },
+  ai_mode_no_key: {
+    pt: "IA sem chave (GEMINI_API_KEY): só as regras locais rodam, e a moderação decide.",
+    en: "AI without a key (GEMINI_API_KEY): only local rules run and moderators decide.",
+    es: "IA sin clave (GEMINI_API_KEY): solo corren las reglas locales y decide la moderación.",
+  },
+  decided_ai_approved: { pt: "Aprovada automaticamente", en: "Approved automatically", es: "Aprobada automáticamente" },
+  decided_ai_rejected: { pt: "Rejeitada automaticamente", en: "Rejected automatically", es: "Rechazada automáticamente" },
+  status_ai_checking: { pt: "Em análise automática", en: "Being checked", es: "En análisis automático" },
+  status_appealed: { pt: "Contestação em análise", en: "Appeal under review", es: "Apelación en revisión" },
+  appeal_button: { pt: "Contestar", en: "Appeal", es: "Apelar" },
+  appeal_title: { pt: "Pedir revisão humana", en: "Ask for a human review", es: "Pedir revisión humana" },
+  appeal_hint: {
+    pt: "Conte por que a decisão automática está errada. Um moderador vai rever a sua foto (só dá para contestar uma vez).",
+    en: "Tell us why the automatic decision is wrong. A moderator will review your photo (you can appeal once).",
+    es: "Cuéntanos por qué la decisión automática es incorrecta. Un moderador revisará tu foto (solo se puede apelar una vez).",
+  },
+  appeal_send: { pt: "Enviar contestação", en: "Send appeal", es: "Enviar apelación" },
+  appeal_sent: {
+    pt: "Contestação enviada. Um moderador vai analisar.",
+    en: "Appeal sent. A moderator will review it.",
+    es: "Apelación enviada. Un moderador la revisará.",
+  },
+  appeal_error_appeal_length: {
+    pt: "Escreva entre 10 e 500 caracteres.",
+    en: "Write between 10 and 500 characters.",
+    es: "Escribe entre 10 y 500 caracteres.",
+  },
+  appeal_error_appeal_already_sent: {
+    pt: "Você já contestou esta decisão.",
+    en: "You already appealed this decision.",
+    es: "Ya apelaste esta decisión.",
+  },
+  appeal_error_appeal_other_active: {
+    pt: "Você já tem outra comprovação em análise ou aprovada para esta missão.",
+    en: "You already have another proof pending or approved for this mission.",
+    es: "Ya tienes otra comprobación en análisis o aprobada para esta misión.",
+  },
+  appeal_error_generic: {
+    pt: "Não foi possível contestar esta comprovação.",
+    en: "This proof cannot be appealed.",
+    es: "No se pudo apelar esta comprobación.",
+  },
+  ai_decision_notice: {
+    pt: "Decisão tomada pela verificação automática do EcoVerify.",
+    en: "Decision made by EcoVerify's automatic verification.",
+    es: "Decisión tomada por la verificación automática de EcoVerify.",
+  },
+  reject_quick_reasons: { pt: "Motivos comuns", en: "Common reasons", es: "Motivos comunes" },
+  settings_theme: { pt: "Tema", en: "Theme", es: "Tema" },
+  theme_system: { pt: "Automático", en: "Automatic", es: "Automático" },
+  theme_light: { pt: "Claro", en: "Light", es: "Claro" },
+  theme_dark: { pt: "Escuro", en: "Dark", es: "Oscuro" },
+  theme_system_hint: {
+    pt: "Automático segue o modo claro/escuro do seu celular ou computador.",
+    en: "Automatic follows your phone or computer light/dark setting.",
+    es: "Automático sigue el modo claro/oscuro de tu celular o computadora.",
+  },
   settings_high_contrast: { pt: "Alto contraste", en: "High contrast", es: "Alto contraste" },
   settings_reduced_motion: {
     pt: "Reduzir movimento/animações",
@@ -189,6 +606,57 @@ const dict = {
     pt: "Esta missão ainda não tem um local configurado.",
     en: "This mission does not have a location configured yet.",
     es: "Esta misión aún no tiene una ubicación configurada.",
+  },
+  error_location_inaccurate: {
+    pt: "A precisão do GPS está baixa. Vá para um local aberto e toque em usar localização novamente.",
+    en: "GPS accuracy is too low. Move to an open area and tap use location again.",
+    es: "La precisión del GPS es baja. Ve a un lugar abierto y toca usar ubicación de nuevo.",
+  },
+  error_event_not_started: {
+    pt: "Este evento ainda não começou. Volte no dia e horário marcados.",
+    en: "This event hasn't started yet. Come back at the scheduled date and time.",
+    es: "Este evento aún no empezó. Vuelve el día y la hora marcados.",
+  },
+  error_event_ended: {
+    pt: "Este evento já terminou e não aceita mais comprovações.",
+    en: "This event has ended and no longer accepts proofs.",
+    es: "Este evento ya terminó y no acepta más pruebas.",
+  },
+  event_badge: { pt: "Evento", en: "Event", es: "Evento" },
+  error_already_submitted: {
+    pt: "Você já enviou uma comprovação para esta missão.",
+    en: "You have already submitted proof for this mission.",
+    es: "Ya enviaste un comprobante para esta misión.",
+  },
+  error_invalid_photo: {
+    pt: "Formato de foto inválido. Envie uma imagem JPG, PNG ou WebP.",
+    en: "Invalid photo format. Please upload a JPG, PNG or WebP image.",
+    es: "Formato de foto inválido. Envía una imagen JPG, PNG o WebP.",
+  },
+  error_photo_too_large: {
+    pt: "A foto é muito grande (máximo 10 MB).",
+    en: "The photo is too large (max 10 MB).",
+    es: "La foto es demasiado grande (máximo 10 MB).",
+  },
+  error_banned: {
+    pt: "Sua conta está suspensa e não pode enviar comprovações.",
+    en: "Your account is suspended and cannot submit proof.",
+    es: "Tu cuenta está suspendida y no puede enviar comprobantes.",
+  },
+  error_too_many_attempts: {
+    pt: "Muitas tentativas. Aguarde alguns minutos e tente novamente.",
+    en: "Too many attempts. Please wait a few minutes and try again.",
+    es: "Demasiados intentos. Espera unos minutos e inténtalo de nuevo.",
+  },
+  wallet_error_invalid: {
+    pt: "Endereço inválido. O endereço FONE nativo tem 64 caracteres e começa com \"f\".",
+    en: "Invalid address. A native FONE address has 64 characters and starts with \"f\".",
+    es: "Dirección inválida. La dirección FONE nativa tiene 64 caracteres y empieza con \"f\".",
+  },
+  wallet_error_in_use: {
+    pt: "Esta carteira já está vinculada a outra conta.",
+    en: "This wallet is already linked to another account.",
+    es: "Esta billetera ya está vinculada a otra cuenta.",
   },
   error_generic: {
     pt: "Algo deu errado. Tente novamente.",
@@ -285,12 +753,589 @@ const dict = {
   chat_send_audio: { pt: "Enviar áudio", en: "Send audio", es: "Enviar audio" },
   chat_cancel: { pt: "Cancelar", en: "Cancel", es: "Cancelar" },
   reward_points: { pt: "pts", en: "pts", es: "pts" },
+  // Account & LGPD
+  register_accept_terms: {
+    pt: "Li e aceito os {terms} e a {privacy}.",
+    en: "I have read and accept the {terms} and the {privacy}.",
+    es: "He leído y acepto los {terms} y la {privacy}.",
+  },
+  register_age_confirm: {
+    pt: "Tenho 13 anos ou mais. Se tiver menos de 18, meu responsável legal autorizou o uso do app (menores participam com pontos e ranking, sem FONE).",
+    en: "I am 13 or older. If I am under 18, my legal guardian has authorised me to use the app (minors take part with points and ranking, without FONE).",
+    es: "Tengo 13 años o más. Si tengo menos de 18, mi tutor legal autorizó el uso de la app (los menores participan con puntos y ranking, sin FONE).",
+  },
+  terms_of_use: { pt: "Termos de Uso", en: "Terms of Use", es: "Términos de Uso" },
+  privacy_policy: { pt: "Política de Privacidade", en: "Privacy Policy", es: "Política de Privacidad" },
+  error_terms_required: {
+    pt: "Para continuar, aceite os Termos de Uso e a Política de Privacidade.",
+    en: "To continue, accept the Terms of Use and the Privacy Policy.",
+    es: "Para continuar, acepta los Términos de Uso y la Política de Privacidad.",
+  },
+  error_age_required: {
+    pt: "Confirme a idade mínima (13 anos) e a autorização do responsável, se for menor de 18.",
+    en: "Confirm the minimum age (13) and your guardian's authorisation if you are under 18.",
+    es: "Confirma la edad mínima (13 años) y la autorización del tutor si eres menor de 18.",
+  },
+  legal_pt_only: {
+    pt: "",
+    en: "Translation provided for convenience. If there is any difference, the Portuguese version prevails.",
+    es: "Traducción ofrecida por comodidad. Si hay alguna diferencia, prevalece la versión en portugués.",
+  },
+  legal_version: { pt: "Versão de {date}", en: "Version of {date}", es: "Versión del {date}" },
+  back: { pt: "Voltar", en: "Back", es: "Volver" },
+  login_forgot: { pt: "Esqueci minha senha", en: "Forgot my password", es: "Olvidé mi contraseña" },
+  login_reset_done: {
+    pt: "Senha alterada. Entre com a nova senha.",
+    en: "Password changed. Sign in with the new password.",
+    es: "Contraseña cambiada. Inicia sesión con la nueva contraseña.",
+  },
+  login_deleted: {
+    pt: "Sua conta foi excluída. Obrigado por ter participado!",
+    en: "Your account was deleted. Thank you for taking part!",
+    es: "Tu cuenta fue eliminada. ¡Gracias por participar!",
+  },
+  forgot_title: { pt: "Recuperar senha", en: "Recover password", es: "Recuperar contraseña" },
+  forgot_subtitle: {
+    pt: "Informe o e-mail da sua conta e enviaremos um link para criar uma nova senha.",
+    en: "Enter your account e-mail and we'll send a link to create a new password.",
+    es: "Ingresa el correo de tu cuenta y te enviaremos un enlace para crear una nueva contraseña.",
+  },
+  forgot_submit: { pt: "Enviar link", en: "Send link", es: "Enviar enlace" },
+  forgot_sent: {
+    pt: "Se houver uma conta com esse e-mail, enviamos um link para redefinir a senha. Confira também a caixa de spam.",
+    en: "If there is an account with that e-mail, we sent a link to reset the password. Check your spam folder too.",
+    es: "Si existe una cuenta con ese correo, enviamos un enlace para restablecer la contraseña. Revisa también el spam.",
+  },
+  back_to_login: { pt: "Voltar para o login", en: "Back to sign in", es: "Volver al inicio de sesión" },
+  error_email_unavailable: {
+    pt: "O envio de e-mails ainda não está configurado. Fale com a equipe do EcoVerify.",
+    en: "E-mail sending is not configured yet. Contact the EcoVerify team.",
+    es: "El envío de correos aún no está configurado. Contacta al equipo de EcoVerify.",
+  },
+  error_email_failed: {
+    pt: "Não foi possível enviar o e-mail agora. Tente novamente mais tarde.",
+    en: "Couldn't send the e-mail right now. Try again later.",
+    es: "No se pudo enviar el correo ahora. Inténtalo más tarde.",
+  },
+  reset_title: { pt: "Criar nova senha", en: "Create new password", es: "Crear nueva contraseña" },
+  reset_submit: { pt: "Salvar nova senha", en: "Save new password", es: "Guardar nueva contraseña" },
+  reset_invalid: {
+    pt: "Este link é inválido, já foi usado ou expirou. Peça um novo.",
+    en: "This link is invalid, was already used or has expired. Request a new one.",
+    es: "Este enlace es inválido, ya fue usado o expiró. Solicita uno nuevo.",
+  },
+  banned_title: { pt: "Sua conta está bloqueada", en: "Your account is blocked", es: "Tu cuenta está bloqueada" },
+  banned_intro: {
+    pt: "A equipe do EcoVerify bloqueou o acesso desta conta. Veja abaixo o motivo informado.",
+    en: "The EcoVerify team blocked access to this account. The stated reason is below.",
+    es: "El equipo de EcoVerify bloqueó el acceso a esta cuenta. Abajo está el motivo informado.",
+  },
+  banned_reason: { pt: "Motivo", en: "Reason", es: "Motivo" },
+  banned_since: { pt: "Bloqueada desde", en: "Blocked since", es: "Bloqueada desde" },
+  banned_no_reason: { pt: "Nenhum motivo foi informado.", en: "No reason was given.", es: "No se informó ningún motivo." },
+  banned_appeal_title: { pt: "Acha que foi um engano?", en: "Think it was a mistake?", es: "¿Crees que fue un error?" },
+  banned_appeal_hint: {
+    pt: "Explique o que aconteceu e, se puder, como provar (ex.: você tem outras fotos do mesmo local). Um administrador vai ler e responder pelo seu e-mail.",
+    en: "Explain what happened and, if you can, how to prove it (e.g. you have other photos of the same place). An administrator will read it and answer by e-mail.",
+    es: "Explica lo que pasó y, si puedes, cómo probarlo (ej.: tienes otras fotos del mismo lugar). Un administrador lo leerá y responderá por tu correo.",
+  },
+  banned_appeal_placeholder: {
+    pt: "Conte com suas palavras o que aconteceu...",
+    en: "Tell us in your own words what happened...",
+    es: "Cuenta con tus palabras lo que pasó...",
+  },
+  banned_appeal_send: { pt: "Enviar contestação", en: "Send appeal", es: "Enviar apelación" },
+  banned_appeal_too_short: {
+    pt: "Escreva pelo menos 20 caracteres explicando o que aconteceu.",
+    en: "Write at least 20 characters explaining what happened.",
+    es: "Escribe al menos 20 caracteres explicando lo que pasó.",
+  },
+  banned_appeal_sent: {
+    pt: "Contestação recebida em {date}. Um administrador vai analisar e responder pelo e-mail {email}.",
+    en: "Appeal received on {date}. An administrator will review it and answer at {email}.",
+    es: "Apelación recibida el {date}. Un administrador la analizará y responderá en {email}.",
+  },
+  banned_contact: {
+    pt: "Também é possível falar com a equipe pelo e-mail",
+    en: "You can also reach the team by e-mail at",
+    es: "También puedes hablar con el equipo por el correo",
+  },
+  banned_expired: {
+    pt: "Esta página expirou. Entre de novo com seu e-mail e senha para ver os detalhes do bloqueio.",
+    en: "This page has expired. Sign in again with your e-mail and password to see the details of the block.",
+    es: "Esta página expiró. Inicia sesión de nuevo con tu correo y contraseña para ver los detalles del bloqueo.",
+  },
+  banned_back_login: { pt: "Voltar para o login", en: "Back to sign in", es: "Volver al inicio de sesión" },
+  staff_ban_appeal_title: {
+    pt: "⚖️ Contestação de bloqueio",
+    en: "⚖️ Block appeal",
+    es: "⚖️ Apelación de bloqueo",
+  },
+  staff_ban_appeal_message: {
+    pt: "{name} contestou o bloqueio da conta. Leia a explicação em Admin → Usuários e decida se desbloqueia.",
+    en: "{name} appealed the account block. Read the explanation in Admin → Users and decide whether to unblock.",
+    es: "{name} apeló el bloqueo de la cuenta. Lee la explicación en Admin → Usuarios y decide si desbloquea.",
+  },
+  new_password: { pt: "Nova senha", en: "New password", es: "Nueva contraseña" },
+  confirm_password: { pt: "Confirme a nova senha", en: "Confirm the new password", es: "Confirma la nueva contraseña" },
+  current_password: { pt: "Senha atual", en: "Current password", es: "Contraseña actual" },
+  error_password_mismatch: { pt: "As senhas não conferem.", en: "Passwords don't match.", es: "Las contraseñas no coinciden." },
+  error_wrong_password: { pt: "Senha incorreta.", en: "Wrong password.", es: "Contraseña incorrecta." },
+  verify_ok_title: { pt: "E-mail confirmado!", en: "E-mail confirmed!", es: "¡Correo confirmado!" },
+  verify_ok_text: {
+    pt: "Obrigado! Sua conta está protegida e você já pode vincular sua carteira FONE.",
+    en: "Thanks! Your account is protected and you can now link your FONE wallet.",
+    es: "¡Gracias! Tu cuenta está protegida y ya puedes vincular tu billetera FONE.",
+  },
+  verify_fail_title: { pt: "Link inválido ou expirado", en: "Invalid or expired link", es: "Enlace inválido o expirado" },
+  verify_fail_text: {
+    pt: "Peça um novo link em Configurações → Conta.",
+    en: "Request a new link in Settings → Account.",
+    es: "Solicita un nuevo enlace en Configuración → Cuenta.",
+  },
+  go_to_app: { pt: "Ir para o app", en: "Go to the app", es: "Ir a la app" },
+  email_banner: {
+    pt: "Confirme seu e-mail: enviamos um link para {email}.",
+    en: "Confirm your e-mail: we sent a link to {email}.",
+    es: "Confirma tu correo: enviamos un enlace a {email}.",
+  },
+  email_resend: { pt: "Reenviar link", en: "Resend link", es: "Reenviar enlace" },
+  email_sent: { pt: "Link enviado! Confira seu e-mail.", en: "Link sent! Check your e-mail.", es: "¡Enlace enviado! Revisa tu correo." },
+  terms_update_title: { pt: "Atualizamos nossos termos", en: "We updated our terms", es: "Actualizamos nuestros términos" },
+  terms_update_text: {
+    pt: "Para continuar usando o EcoVerify, leia e aceite a versão atual dos documentos abaixo.",
+    en: "To keep using EcoVerify, read and accept the current version of the documents below.",
+    es: "Para seguir usando EcoVerify, lee y acepta la versión actual de los documentos.",
+  },
+  terms_continue: { pt: "Aceitar e continuar", en: "Accept and continue", es: "Aceptar y continuar" },
+  account_section: { pt: "Conta", en: "Account", es: "Cuenta" },
+  email_verified: { pt: "E-mail confirmado", en: "E-mail confirmed", es: "Correo confirmado" },
+  email_not_verified: { pt: "E-mail não confirmado", en: "E-mail not confirmed", es: "Correo no confirmado" },
+  change_password: { pt: "Alterar senha", en: "Change password", es: "Cambiar contraseña" },
+  password_changed: {
+    pt: "Senha alterada. Os outros aparelhos foram desconectados.",
+    en: "Password changed. Other devices were signed out.",
+    es: "Contraseña cambiada. Los otros dispositivos fueron desconectados.",
+  },
+  privacy_section: { pt: "Privacidade e dados", en: "Privacy and data", es: "Privacidad y datos" },
+  terms_accepted_on: { pt: "Termos aceitos em {date}", en: "Terms accepted on {date}", es: "Términos aceptados el {date}" },
+  export_title: { pt: "Baixar meus dados", en: "Download my data", es: "Descargar mis datos" },
+  export_text: {
+    pt: "Um arquivo com tudo o que o EcoVerify guarda sobre você (LGPD, art. 18). É um .json: o formato padrão para levar seus dados a outro serviço, e abre em qualquer editor de texto.",
+    en: "A file with everything EcoVerify keeps about you (LGPD, art. 18). It's a .json: the standard format to take your data to another service, and it opens in any text editor.",
+    es: "Un archivo con todo lo que EcoVerify guarda sobre ti (LGPD, art. 18). Es un .json: el formato estándar para llevar tus datos a otro servicio, y se abre en cualquier editor de texto.",
+  },
+  export_button: { pt: "Baixar meus dados", en: "Download my data", es: "Descargar mis datos" },
+  export_preparing: { pt: "Preparando…", en: "Preparing…", es: "Preparando…" },
+  export_downloaded: { pt: "Download iniciado.", en: "Download started.", es: "Descarga iniciada." },
+  export_saved: { pt: "Arquivo salvo em {path}", en: "File saved to {path}", es: "Archivo guardado en {path}" },
+  export_saved_hint: {
+    pt: "Abra o app Arquivos do celular e procure a pasta Documentos.",
+    en: "Open your phone's Files app and look in the Documents folder.",
+    es: "Abre la app Archivos del teléfono y busca la carpeta Documentos.",
+  },
+  export_share: { pt: "Compartilhar ou salvar em outro lugar", en: "Share or save somewhere else", es: "Compartir o guardar en otro lugar" },
+  export_shared: { pt: "Arquivo pronto para compartilhar.", en: "File ready to share.", es: "Archivo listo para compartir." },
+  export_copied: {
+    pt: "Seus dados foram copiados. Para salvar como arquivo, atualize o app para a versão mais recente.",
+    en: "Your data was copied. To save it as a file, update the app to the latest version.",
+    es: "Tus datos se copiaron. Para guardarlos como archivo, actualiza la app a la versión más reciente.",
+  },
+  export_failed: { pt: "Não foi possível gerar o arquivo. Tente de novo.", en: "Could not create the file. Try again.", es: "No se pudo generar el archivo. Inténtalo de nuevo." },
+  export_too_many: {
+    pt: "Você já baixou seus dados várias vezes na última hora. Tente mais tarde.",
+    en: "You downloaded your data several times in the last hour. Try again later.",
+    es: "Ya descargaste tus datos varias veces en la última hora. Inténtalo más tarde.",
+  },
+  delete_title: { pt: "Excluir minha conta", en: "Delete my account", es: "Eliminar mi cuenta" },
+  delete_text: {
+    pt: "Apaga seu nome, e-mail, fotos, relatos, localização, mensagens e carteira. FONE ainda não pago é perdido. Pagamentos já feitos continuam registrados na blockchain, que é pública e permanente.",
+    en: "Erases your name, e-mail, photos, reports, location, messages and wallet. Unpaid FONE is lost. Payouts already made remain on the blockchain, which is public and permanent.",
+    es: "Borra tu nombre, correo, fotos, relatos, ubicación, mensajes y billetera. El FONE no pagado se pierde. Los pagos ya hechos siguen en la blockchain, que es pública y permanente.",
+  },
+  delete_confirm_label: { pt: "Entendo que isso não pode ser desfeito.", en: "I understand this cannot be undone.", es: "Entiendo que esto no se puede deshacer." },
+  delete_password: { pt: "Digite sua senha para confirmar", en: "Enter your password to confirm", es: "Ingresa tu contraseña para confirmar" },
+  delete_button: { pt: "Excluir conta definitivamente", en: "Delete account permanently", es: "Eliminar cuenta definitivamente" },
+  error_last_admin: {
+    pt: "Você é o único administrador. Promova outra pessoa a admin antes de excluir sua conta.",
+    en: "You are the only admin. Promote someone else to admin before deleting your account.",
+    es: "Eres el único administrador. Promueve a otra persona a admin antes de eliminar tu cuenta.",
+  },
+  error_confirm_required: { pt: "Marque a confirmação.", en: "Tick the confirmation.", es: "Marca la confirmación." },
+  wallet_error_email: {
+    pt: "Confirme seu e-mail antes de vincular uma carteira (Configurações → Conta).",
+    en: "Confirm your e-mail before linking a wallet (Settings → Account).",
+    es: "Confirma tu correo antes de vincular una billetera (Configuración → Cuenta).",
+  },
+  // Regional missions
+  region_near_you: { pt: "Missões perto de você", en: "Missions near you", es: "Misiones cerca de ti" },
+  region_prompt_title: { pt: "Veja as missões da sua região", en: "See the missions in your area", es: "Mira las misiones de tu región" },
+  region_prompt_text: {
+    pt: "Use sua localização ou escolha a cidade. A localização serve só para filtrar a lista: fica arredondada (~1 km) neste aparelho e não é salva na sua conta.",
+    en: "Use your location or pick a city. Your location only filters the list: it is rounded (~1 km), kept on this device and not saved to your account.",
+    es: "Usa tu ubicación o elige la ciudad. La ubicación solo filtra la lista: se redondea (~1 km), queda en este dispositivo y no se guarda en tu cuenta.",
+  },
+  region_use_location: { pt: "Usar minha localização", en: "Use my location", es: "Usar mi ubicación" },
+  region_locating: { pt: "Localizando…", en: "Locating…", es: "Ubicando…" },
+  region_pick_city: { pt: "Escolher cidade", en: "Pick a city", es: "Elegir ciudad" },
+  region_search_placeholder: { pt: "Digite a cidade (ex.: Olinda)", en: "Type the city (e.g. Olinda)", es: "Escribe la ciudad (ej.: Olinda)" },
+  region_no_results: { pt: "Nenhuma cidade encontrada.", en: "No city found.", es: "No se encontró ninguna ciudad." },
+  region_change: { pt: "Trocar", en: "Change", es: "Cambiar" },
+  region_clear: { pt: "Ver todas", en: "See all", es: "Ver todas" },
+  region_radius: { pt: "Raio", en: "Radius", es: "Radio" },
+  region_by_gps: { pt: "pela sua localização", en: "from your location", es: "por tu ubicación" },
+  region_by_choice: { pt: "cidade escolhida", en: "chosen city", es: "ciudad elegida" },
+  region_error_location: {
+    pt: "Não foi possível obter sua localização. Permita o acesso ou escolha a cidade.",
+    en: "Could not get your location. Allow access or pick a city.",
+    es: "No se pudo obtener tu ubicación. Permite el acceso o elige la ciudad.",
+  },
+  region_search_hint: {
+    pt: "A busca por nome tem as cidades do Brasil. Em outros países, use sua localização.",
+    en: "Search by name covers cities in Brazil. In other countries, use your location.",
+    es: "La búsqueda por nombre incluye las ciudades de Brasil. En otros países, usa tu ubicación.",
+  },
+  region_invite_title: { pt: "Ver missões perto de você?", en: "See missions near you?", es: "¿Ver misiones cerca de ti?" },
+  region_invite_text: {
+    pt: "O EcoVerify mostra primeiro o que dá para fazer na sua região, em qualquer país. Sua localização fica arredondada (~1 km), só neste aparelho, e não é salva na sua conta.",
+    en: "EcoVerify shows first what you can do in your area, in any country. Your location is rounded (~1 km), kept on this device only and never saved to your account.",
+    es: "EcoVerify muestra primero lo que puedes hacer en tu zona, en cualquier país. Tu ubicación se redondea (~1 km), queda solo en este dispositivo y no se guarda en tu cuenta.",
+  },
+  region_invite_later: { pt: "Agora não", en: "Not now", es: "Ahora no" },
+  region_other_cities: { pt: "Missões locais em outras cidades", en: "Local missions in other cities", es: "Misiones locales en otras ciudades" },
+  region_other_cities_hint: {
+    pt: "Escolha sua região acima para ver primeiro as missões perto de você.",
+    en: "Choose your area above to see the missions near you first.",
+    es: "Elige tu zona arriba para ver primero las misiones cerca de ti.",
+  },
+  region_section_nearby: { pt: "Perto de você", en: "Near you", es: "Cerca de ti" },
+  region_section_anywhere: { pt: "Em qualquer lugar", en: "Anywhere", es: "En cualquier lugar" },
+  region_anywhere_hint: {
+    pt: "Dá para fazer de casa ou de onde você estiver.",
+    en: "You can do these at home or wherever you are.",
+    es: "Puedes hacerlas en casa o donde estés.",
+  },
+  region_elsewhere: {
+    pt: "{n} missões em outras regiões.",
+    en: "{n} missions in other areas.",
+    es: "{n} misiones en otras regiones.",
+  },
+  region_empty_title: { pt: "Ainda não há missões aqui", en: "No missions here yet", es: "Todavía no hay misiones aquí" },
+  region_empty_text: {
+    pt: "Peça missões para {city} e convide sua escola, empresa ou bairro. Você também pode sugerir uma ação.",
+    en: "Ask for missions in {city} and invite your school, company or neighbourhood. You can also suggest an action.",
+    es: "Pide misiones para {city} e invita a tu escuela, empresa o barrio. También puedes sugerir una acción.",
+  },
+  region_seeding: {
+    pt: "Estamos procurando pontos de coleta, parques e praias perto de você no OpenStreetMap para criar missões. Volte em alguns minutos.",
+    en: "We are looking for recycling points, parks and beaches near you on OpenStreetMap to create missions. Come back in a few minutes.",
+    es: "Estamos buscando puntos de reciclaje, parques y playas cerca de ti en OpenStreetMap para crear misiones. Vuelve en unos minutos.",
+  },
+  region_want_more: { pt: "Quero mais missões aqui", en: "I want more missions here", es: "Quiero más misiones aquí" },
+  region_want_more_done: { pt: "Pedido registrado ✓", en: "Request registered ✓", es: "Pedido registrado ✓" },
+  region_want_more_count: {
+    pt: "{n} pessoa(s) já pediram missões em {city}.",
+    en: "{n} person(s) already asked for missions in {city}.",
+    es: "{n} persona(s) ya pidieron misiones en {city}.",
+  },
+  region_suggest: { pt: "Sugerir uma ação", en: "Suggest an action", es: "Sugerir una acción" },
+  mission_anywhere: { pt: "Em qualquer lugar", en: "Anywhere", es: "En cualquier lugar" },
+  mission_auto_badge: { pt: "Nova na região", en: "New in the area", es: "Nueva en la región" },
+  mission_auto_points_only: {
+    pt: "Só pontos até a equipe revisar esta missão.",
+    en: "Points only until the team reviews this mission.",
+    es: "Solo puntos hasta que el equipo revise esta misión.",
+  },
+  mission_suggested_badge: { pt: "Sugerida pela comunidade", en: "Suggested by the community", es: "Sugerida por la comunidad" },
+  mission_sponsor: { pt: "Apoio", en: "Supported by", es: "Apoyo" },
+  transparency: { pt: "Transparência", en: "Transparency", es: "Transparencia" },
+  mission_sponsor_left: {
+    pt: "FONE pago pelo patrocinador · restam {fone} FONE no orçamento",
+    en: "FONE paid by the sponsor · {fone} FONE left in the budget",
+    es: "FONE pagado por el patrocinador · quedan {fone} FONE en el presupuesto",
+  },
+  mission_sponsor_empty: {
+    pt: "O orçamento do patrocinador acabou: os pontos valem normalmente e o FONE fica em espera até uma recarga.",
+    en: "The sponsor budget ran out: points work as usual and the FONE stays on hold until a top-up.",
+    es: "Se acabó el presupuesto del patrocinador: los puntos valen normalmente y el FONE queda en espera hasta una recarga.",
+  },
+  payout_below_min: {
+    pt: "Enviamos quando somar pelo menos {min} FONE — assim a taxa da rede não come a sua recompensa.",
+    en: "We send it once it adds up to at least {min} FONE — so the network fee doesn't eat your reward.",
+    es: "Lo enviamos cuando sume al menos {min} FONE — así la comisión de la red no se come tu recompensa.",
+  },
+  payout_waiting: { pt: "em carência · libera em {date}", en: "in hold period · released on {date}", es: "en período de carencia · se libera el {date}" },
+  payout_held: {
+    pt: "em espera (orçamento do mês ou limite atingido)",
+    en: "on hold (monthly budget or limit reached)",
+    es: "en espera (presupuesto del mes o límite alcanzado)",
+  },
+  payout_rules_note: {
+    pt: "Cada recompensa espera {days} dia(s) antes de ser paga (tempo para contestações) e os envios começam a partir de {min} FONE.",
+    en: "Each reward waits {days} day(s) before it is paid (time for appeals) and payments start from {min} FONE.",
+    es: "Cada recompensa espera {days} día(s) antes de pagarse (tiempo para apelaciones) y los envíos empiezan desde {min} FONE.",
+  },
+  osm_attribution: { pt: "Local: © colaboradores do OpenStreetMap", en: "Place: © OpenStreetMap contributors", es: "Lugar: © colaboradores de OpenStreetMap" },
+  anywhere_location_note: {
+    pt: "Missão em qualquer lugar: registramos a localização como as outras, mas você não precisa estar num ponto específico.",
+    en: "Anywhere mission: we record your location as usual, but you don't need to be at a specific spot.",
+    es: "Misión en cualquier lugar: registramos tu ubicación como siempre, pero no necesitas estar en un punto específico.",
+  },
+  // Suggestions
+  suggest_title: { pt: "Sugerir uma ação na sua região", en: "Suggest an action in your area", es: "Sugerir una acción en tu región" },
+  suggest_subtitle: {
+    pt: "Viu uma praia suja, uma praça precisando de mutirão ou um ponto de coleta? Conte para a moderação. Se for aprovada, vira missão para todo mundo da região.",
+    en: "Saw a dirty beach, a square that needs a clean-up or a recycling point? Tell the moderators. If approved, it becomes a mission for everyone in the area.",
+    es: "¿Viste una playa sucia, una plaza que necesita limpieza o un punto de reciclaje? Cuéntalo a la moderación. Si se aprueba, será una misión para toda la región.",
+  },
+  suggest_name: { pt: "Nome da ação", en: "Action name", es: "Nombre de la acción" },
+  suggest_name_placeholder: { pt: "Ex.: Mutirão na Praça do Carmo", en: "E.g. Clean-up at Carmo Square", es: "Ej.: Limpieza en la Plaza do Carmo" },
+  suggest_description: { pt: "O que precisa ser feito e onde", en: "What needs to be done and where", es: "Qué hay que hacer y dónde" },
+  suggest_location: { pt: "Local da ação (você precisa estar lá ou perto)", en: "Place of the action (you need to be there or nearby)", es: "Lugar de la acción (debes estar allí o cerca)" },
+  suggest_category: { pt: "Tipo de ação", en: "Kind of action", es: "Tipo de acción" },
+  suggest_send: { pt: "Enviar sugestão", en: "Send suggestion", es: "Enviar sugerencia" },
+  suggest_sent: {
+    pt: "Sugestão enviada! Você recebe uma notificação quando a moderação analisar.",
+    en: "Suggestion sent! You'll get a notification when the moderators review it.",
+    es: "¡Sugerencia enviada! Recibirás una notificación cuando la moderación la revise.",
+  },
+  suggest_error_invalid: {
+    pt: "Preencha o nome (5–120 caracteres), a descrição (30–1000) e a localização.",
+    en: "Fill in the name (5–120 characters), the description (30–1000) and the location.",
+    es: "Completa el nombre (5–120 caracteres), la descripción (30–1000) y la ubicación.",
+  },
+  suggest_error_limit: {
+    pt: "Você já tem 3 sugestões aguardando análise. Espere a moderação responder.",
+    en: "You already have 3 suggestions waiting for review. Wait for the moderators.",
+    es: "Ya tienes 3 sugerencias esperando revisión. Espera a la moderación.",
+  },
+  suggestions_title: { pt: "Sugestões de ação da comunidade", en: "Community action suggestions", es: "Sugerencias de acción de la comunidad" },
+  suggestion_approve: { pt: "Virar missão", en: "Make it a mission", es: "Convertir en misión" },
+  suggestion_done_approved: { pt: "Virou missão (só pontos até o admin revisar)", en: "Now a mission (points only until an admin reviews it)", es: "Ahora es una misión (solo puntos hasta que un admin la revise)" },
+  suggestion_done_rejected: { pt: "Sugestão recusada", en: "Suggestion declined", es: "Sugerencia rechazada" },
+  suggestion_reject: { pt: "Recusar", en: "Decline", es: "Rechazar" },
+  suggestion_points_hint: {
+    pt: "Vira missão com pontos. O FONE é definido por um admin depois.",
+    en: "Becomes a mission with points. FONE is set by an admin later.",
+    es: "Se convierte en misión con puntos. El FONE lo define un admin después.",
+  },
+  // Fone brand
+  powered_by_fone: { pt: "Recompensas na rede", en: "Rewards on", es: "Recompensas en la red" },
+  fone_wallet_official: { pt: "App oficial da rede Fone", en: "Official Fone network app", es: "App oficial de la red Fone" },
+  // Splash + "how it works" (first launch)
+  splash_how_title: { pt: "Como funciona", en: "How it works", es: "Cómo funciona" },
+  splash_step1_title: { pt: "Escolha uma missão", en: "Pick a mission", es: "Elige una misión" },
+  splash_step1_text: {
+    pt: "Ações sustentáveis perto de você: mutirões, plantio, reciclagem.",
+    en: "Sustainable actions near you: clean-ups, tree planting, recycling.",
+    es: "Acciones sostenibles cerca de ti: limpiezas, plantación, reciclaje.",
+  },
+  splash_step2_title: { pt: "Faça e tire a foto", en: "Do it and take a photo", es: "Hazla y toma la foto" },
+  splash_step2_text: {
+    pt: "Registre a ação no local. O GPS confirma que você estava lá.",
+    en: "Capture the action on site. GPS confirms you were there.",
+    es: "Registra la acción en el lugar. El GPS confirma que estuviste allí.",
+  },
+  splash_step3_title: { pt: "Verificação", en: "Verification", es: "Verificación" },
+  splash_step3_text: {
+    pt: "A IA analisa a foto e a moderação confere. Sem atalhos.",
+    en: "AI checks the photo and the moderators review it. No shortcuts.",
+    es: "La IA analiza la foto y la moderación la revisa. Sin atajos.",
+  },
+  splash_step4_title: { pt: "Ganhe recompensas", en: "Earn rewards", es: "Gana recompensas" },
+  splash_step4_text: {
+    pt: "Pontos no ranking e FONE na sua carteira (FONE para maiores de 18).",
+    en: "Ranking points and FONE in your wallet (FONE for 18+).",
+    es: "Puntos en el ranking y FONE en tu billetera (FONE para mayores de 18).",
+  },
+  splash_start: { pt: "Começar", en: "Get started", es: "Empezar" },
+  splash_skip: { pt: "Pular", en: "Skip", es: "Saltar" },
+  // ---- Recycling deliveries (material + weight) ----
+  recycling_delivery: { pt: "Entrega", en: "Delivery", es: "Entrega" },
+  recycling_weight_corrected: { pt: "peso corrigido pela moderação", en: "weight corrected by moderators", es: "peso corregido por la moderación" },
+  recycling_weight_review: { pt: "Peso conferido (kg)", en: "Checked weight (kg)", es: "Peso revisado (kg)" },
+  error_weight_invalid: {
+    pt: "Informe o peso aproximado entre 0,1 e 200 kg.",
+    en: "Enter the approximate weight between 0.1 and 200 kg.",
+    es: "Indica el peso aproximado entre 0,1 y 200 kg.",
+  },
+  what_to_do: {
+    pt: "O que fazer",
+    en: "What to do",
+    es: "Qué hacer",
+  },
+  why_it_matters: {
+    pt: "Por que importa",
+    en: "Why it matters",
+    es: "Por qué importa",
+  },
+  photo_preview: {
+    pt: "Pré-visualização da foto",
+    en: "Photo preview",
+    es: "Vista previa de la foto",
+  },
+  report_placeholder: {
+    pt: "Conte como foi a experiência, onde e como você realizou a ação...",
+    en: "Tell us how it went, where and how you did it...",
+    es: "Cuenta cómo fue, dónde y cómo realizaste la acción...",
+  },
+  mic_error: {
+    pt: "Erro ao acessar o microfone. Verifique as permissões.",
+    en: "Couldn't access the microphone. Check the permissions.",
+    es: "Error al acceder al micrófono. Revisa los permisos.",
+  },
+  audio_upload_error: {
+    pt: "Erro ao enviar o áudio. Tente novamente.",
+    en: "Couldn't upload the audio. Try again.",
+    es: "Error al subir el audio. Inténtalo de nuevo.",
+  },
+  user_fallback: {
+    pt: "Usuário",
+    en: "User",
+    es: "Usuario",
+  },
+  no_history: {
+    pt: "Nenhum histórico encontrado.",
+    en: "No history found.",
+    es: "No se encontró historial.",
+  },
+  proof_approved_ok: {
+    pt: "Comprovação aprovada com sucesso!",
+    en: "Proof approved!",
+    es: "¡Comprobante aprobado!",
+  },
+  reject_placeholder: {
+    pt: "Explique por que a comprovação está sendo rejeitada...",
+    en: "Explain why the proof is being rejected...",
+    es: "Explica por qué se rechaza el comprobante...",
+  },
+  prefs_saved: {
+    pt: "✓ Preferências salvas",
+    en: "✓ Preferences saved",
+    es: "✓ Preferencias guardadas",
+  },
+  community_subtitle: {
+    pt: "Converse com os membros de {org}",
+    en: "Chat with the members of {org}",
+    es: "Conversa con los miembros de {org}",
+  },
+  community_pick: { pt: "Suas comunidades", en: "Your communities", es: "Tus comunidades" },
+  community_no_org_title: {
+    pt: "A Comunidade é o chat da sua organização",
+    en: "The Community is your organization's chat",
+    es: "La Comunidad es el chat de tu organización",
+  },
+  community_no_org_text: {
+    pt: "Entre em uma organização (escola, empresa, ONG...) com o código de convite ou crie a sua para conversar com os membros.",
+    en: "Join an organization (school, company, NGO...) with its invite code or create your own to chat with its members.",
+    es: "Únete a una organización (escuela, empresa, ONG...) con su código de invitación o crea la tuya para conversar con sus miembros.",
+  },
+  community_no_org_cta: { pt: "Entrar ou criar organização", en: "Join or create an organization", es: "Unirse o crear organización" },
+  you_suffix: {
+    pt: "(você)",
+    en: "(you)",
+    es: "(tú)",
+  },
+  role_citizen: {
+    pt: "Cidadão(ã)",
+    en: "Citizen",
+    es: "Ciudadano(a)",
+  },
+  role_moderator: {
+    pt: "Moderador(a)",
+    en: "Moderator",
+    es: "Moderador(a)",
+  },
+  role_admin: {
+    pt: "Administrador(a)",
+    en: "Administrator",
+    es: "Administrador(a)",
+  },
+  cards_rules_free: {
+    pt: "Cartão amarelo é dado por uma pessoa da equipe quando há tentativa de fraude (foto da internet, de tela, reaproveitada, localização falsa...). Vale por 6 meses. Com 3 válidos, a conta fica suspensa por 14 dias. Reincidência depois de uma suspensão pode levar a cartão vermelho (bloqueio). Erro honesto não dá cartão.",
+    en: "A team member gives a yellow card when there is a fraud attempt (photo from the internet, of a screen, reused, fake location...). It lasts 6 months. With 3 valid cards the account is suspended for 14 days. Repeat offences after a suspension can lead to a red card (block). Honest mistakes don't get a card.",
+    es: "Un miembro del equipo da tarjeta amarilla cuando hay intento de fraude (foto de internet, de pantalla, reutilizada, ubicación falsa...). Vale 6 meses. Con 3 válidas, la cuenta se suspende 14 días. La reincidencia después de una suspensión puede llevar a tarjeta roja (bloqueo). Un error honesto no recibe tarjeta.",
+  },
+  suspended_intro_free: {
+    pt: "Você recebeu 3 cartões amarelos válidos. A conta volta a funcionar sozinha na data abaixo. Seus pontos continuam guardados.",
+    en: "You got 3 valid yellow cards. The account works again by itself on the date below. Your points are kept.",
+    es: "Recibiste 3 tarjetas amarillas válidas. La cuenta vuelve a funcionar sola en la fecha de abajo. Tus puntos se conservan.",
+  },
+  register_age_confirm_free: {
+    pt: "Tenho 13 anos ou mais. Se tiver menos de 18, meu responsável legal autorizou o uso do app.",
+    en: "I am 13 or older. If I am under 18, my legal guardian has authorised me to use the app.",
+    es: "Tengo 13 años o más. Si tengo menos de 18, mi tutor legal autorizó el uso de la app.",
+  },
+  verify_ok_text_free: {
+    pt: "Obrigado! Sua conta está protegida. Bora para as missões!",
+    en: "Thanks! Your account is protected. Off to the missions!",
+    es: "¡Gracias! Tu cuenta está protegida. ¡A las misiones!",
+  },
+  delete_text_free: {
+    pt: "Apaga seu nome, e-mail, fotos, relatos, localização e mensagens. Seus pontos e posição no ranking também são perdidos.",
+    en: "Erases your name, e-mail, photos, reports, location and messages. Your points and ranking position are lost too.",
+    es: "Borra tu nombre, correo, fotos, relatos, ubicación y mensajes. Tus puntos y tu posición en el ranking también se pierden.",
+  },
+  suggestion_points_hint_free: {
+    pt: "Vira missão com pontos para todo mundo da região.",
+    en: "Becomes a mission with points for everyone in the area.",
+    es: "Se convierte en misión con puntos para todos en la región.",
+  },
+  splash_step4_text_free: {
+    pt: "Pontos, níveis, ranking e benefícios em comércios da sua cidade.",
+    en: "Points, levels, the ranking and perks at local shops.",
+    es: "Puntos, niveles, ranking y beneficios en comercios de tu ciudad.",
+  },
+  nav_more: {
+    pt: "Mais",
+    en: "More",
+    es: "Más",
+  },
+  error_count_invalid: {
+    pt: "Informe quantos itens aparecem na foto (um número de 1 a 300).",
+    en: "Enter how many items are in the photo (a number from 1 to 300).",
+    es: "Indica cuántos artículos salen en la foto (un número de 1 a 300).",
+  },
+  error_count_below_target: {
+    pt: "A quantidade é menor que o mínimo pedido pela missão.",
+    en: "The number is below the minimum the mission asks for.",
+    es: "La cantidad es menor que el mínimo que pide la misión.",
+  },
+  error_photo_before_required: {
+    pt: "Envie também a foto de ANTES.",
+    en: "Also send the BEFORE photo.",
+    es: "Envía también la foto de ANTES.",
+  },
+  error_before_after_same_photo: {
+    pt: "As fotos de antes e depois são a mesma imagem. Tire uma foto depois de fazer a ação.",
+    en: "The before and after photos are the same picture. Take a photo after doing the action.",
+    es: "Las fotos de antes y después son la misma imagen. Toma una foto después de hacer la acción.",
+  },
+  recycling_count_review: {
+    pt: "Itens conferidos",
+    en: "Checked items",
+    es: "Artículos revisados",
+  },
+  error_count_review_invalid: {
+    pt: "Informe um número de itens válido.",
+    en: "Enter a valid number of items.",
+    es: "Indica un número de artículos válido.",
+  },
 } as const;
 
 export type DictKey = keyof typeof dict;
+/** Read-only view of the dictionary (tests check that every key has pt/en/es). */
+export const I18N_DICT: Readonly<Record<DictKey, Partial<Record<Lang, string>>>> = dict;
 
 export function t(lang: Lang, key: DictKey): string {
   return dict[key]?.[lang] ?? dict[key]?.pt ?? String(key);
+}
+
+/** t() with "{name}" placeholders. */
+export function tf(lang: Lang, key: DictKey, vars: Record<string, string | number>): string {
+  let text = t(lang, key);
+  for (const [name, value] of Object.entries(vars)) text = text.split(`{${name}}`).join(String(value));
+  return text;
 }
 
 export const categoryLabels: Record<string, Record<Lang, string>> = {

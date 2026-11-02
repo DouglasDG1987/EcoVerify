@@ -1,58 +1,125 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { isParticipant } from "@/lib/nav";
+import { after } from "next/server";
 import { redirect } from "next/navigation";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { communityChat, messageFavorites, messageReports, notifications, users } from "@/db/schema";
+import { chatBlocks, communityChat, messageFavorites, messageReports, notifications, organizationMembers, users } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth";
+import { isAllowedMediaUrl, isCommunityMember, messageCommunityFor } from "@/lib/community";
+import { rateLimit } from "@/lib/rate-limit";
+import {
+  CHAT_REPORT_DETAIL_MAX,
+  canSendChatMedia,
+  chatTextIssue,
+  isChatMuted,
+  isChatReportReason,
+  shouldHideForReports,
+} from "@/lib/chat-moderation";
+import { chatImagesCheckedByAi, checkChatImage, hideChatMessage } from "@/lib/chat-moderation-server";
 export type ActionState = { error?: string };
+
+const MESSAGE_TYPES = ["text", "image", "audio", "video", "gif"] as const;
+type MessageType = (typeof MESSAGE_TYPES)[number];
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const COMMUNITY_NOTIFICATION_TITLE = "Nova mensagem na comunidade";
 
 export async function sendMessageAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  if (user.role !== "citizen") return { error: "not_citizen" };
+  if (!isParticipant(user.role)) return { error: "not_citizen" };
+  if (isChatMuted(user.chatMutedUntil)) return { error: "muted" };
+
+  if (!rateLimit(`chat:${user.id}`, 20, 60 * 1000)) {
+    return { error: "too_many_messages" };
+  }
+
+  // Each organization has its own chat: only its members can write there.
+  const organizationId = String(formData.get("organizationId") ?? "").trim();
+  if (!(await isCommunityMember(user.id, organizationId))) return { error: "not_member" };
 
   const message = String(formData.get("message") ?? "").trim();
-  const messageType = String(formData.get("messageType") ?? "text") as "text" | "image" | "audio" | "video" | "gif";
-  const mediaUrl = String(formData.get("mediaUrl") ?? "") || null;
-  const replyToId = String(formData.get("replyToId") ?? "") || null;
-  const replyToMessage = String(formData.get("replyToMessage") ?? "") || null;
+  const messageType = String(formData.get("messageType") ?? "text") as MessageType;
+  const mediaUrl = String(formData.get("mediaUrl") ?? "").trim() || null;
+  const replyToIdRaw = String(formData.get("replyToId") ?? "").trim();
+
+  if (!MESSAGE_TYPES.includes(messageType)) {
+    return { error: "invalid" };
+  }
 
   // Para mensagens de mídia, não requer texto
   if (messageType === "text" && !message) {
     return { error: "empty_message" };
   }
+  if (messageType !== "text" && (!mediaUrl || !isAllowedMediaUrl(messageType, mediaUrl))) {
+    return { error: "invalid" };
+  }
 
   if (message && message.length > 1000) {
     return { error: "message_too_long" };
   }
+  // Safety rules (src/lib/chat-moderation.ts): no contact data or links; audio/video only 18+.
+  const textIssue = chatTextIssue(message);
+  if (textIssue) return { error: textIssue };
+  if (!canSendChatMedia(messageType, !!user.adultDeclaredAt)) return { error: "adult_media" };
 
-  await db.insert(communityChat).values({
-    message: message || null,
-    messageType,
-    mediaUrl,
-    replyToId,
-    replyToMessage,
-    userId: user.id,
-  });
-
-  // Notificar todos os usuários cidadãos sobre nova mensagem
-  const allCitizens = await db
-    .select({ id: users.id })
-    .from(users)
-    .where(eq(users.role, "citizen"));
-
-  for (const citizen of allCitizens) {
-    if (citizen.id !== user.id) {
-      await db.insert(notifications).values({
-        userId: citizen.id,
-        type: "system",
-        title: "Nova mensagem na comunidade",
-        message: `Há uma nova mensagem no chat da comunidade.`,
-      });
+  // The quoted text is read from the database instead of trusting the client,
+  // so nobody can fake a reply quoting something another user never said.
+  let replyToId: string | null = null;
+  let replyToMessage: string | null = null;
+  if (replyToIdRaw && UUID_PATTERN.test(replyToIdRaw)) {
+    const [original] = await db
+      .select({
+        id: communityChat.id,
+        message: communityChat.message,
+        messageType: communityChat.messageType,
+        deleteForEveryone: communityChat.deleteForEveryone,
+      })
+      .from(communityChat)
+      // Replies only quote messages of the same organization's chat.
+      .where(and(eq(communityChat.id, replyToIdRaw), eq(communityChat.organizationId, organizationId)))
+      .limit(1);
+    if (original && !original.deleteForEveryone) {
+      replyToId = original.id;
+      replyToMessage = (original.message ?? `[${original.messageType}]`).slice(0, 200);
     }
   }
+
+  const checkImage = messageType === "image" && (await chatImagesCheckedByAi());
+  const [created] = await db
+    .insert(communityChat)
+    .values({
+      message: message || null,
+      messageType,
+      mediaUrl: messageType === "text" ? null : mediaUrl,
+      replyToId,
+      replyToMessage,
+      userId: user.id,
+      organizationId,
+      aiStatus: checkImage ? "checking" : null,
+    })
+    .returning({ id: communityChat.id });
+  // Others only see the image after the AI checks it (an inappropriate one is hidden + staff alert).
+  if (checkImage && created && mediaUrl) after(() => checkChatImage(created.id, mediaUrl));
+
+  // Notify the other members of this organization with a single query.
+  // Users that already have an unread community notification don't get another one.
+  await db.execute(sql`
+    insert into ${notifications} (user_id, type, title, message)
+    select u.id, 'system', ${COMMUNITY_NOTIFICATION_TITLE}, 'Há novas mensagens no chat da comunidade.'
+    from ${users} u
+    join ${organizationMembers} om on om.user_id = u.id and om.organization_id = ${organizationId}
+    where u.role <> 'admin'
+      and u.is_banned = false
+      and u.notifications_enabled = true
+      and u.id <> ${user.id}
+      and not exists (
+        select 1 from ${notifications} n
+        where n.user_id = u.id and n.is_read = false and n.title = ${COMMUNITY_NOTIFICATION_TITLE}
+      )
+  `);
 
   revalidatePath("/community");
   revalidatePath("/notifications");
@@ -62,7 +129,7 @@ export async function sendMessageAction(_prev: ActionState, formData: FormData):
 export async function editMessageAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  if (user.role !== "citizen") return { error: "not_citizen" };
+  if (!isParticipant(user.role)) return { error: "not_citizen" };
 
   const messageId = String(formData.get("messageId") ?? "");
   const newMessage = String(formData.get("message") ?? "").trim();
@@ -74,6 +141,8 @@ export async function editMessageAction(_prev: ActionState, formData: FormData):
   if (newMessage.length > 1000) {
     return { error: "message_too_long" };
   }
+  const textIssue = chatTextIssue(newMessage);
+  if (textIssue) return { error: textIssue };
 
   // Verificar se a mensagem pertence ao usuário e se já foi editada
   const existingMessage = await db
@@ -109,7 +178,7 @@ export async function editMessageAction(_prev: ActionState, formData: FormData):
 export async function deleteMessageAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  if (user.role !== "citizen") return { error: "not_citizen" };
+  if (!isParticipant(user.role)) return { error: "not_citizen" };
 
   const messageId = String(formData.get("messageId") ?? "");
   const deleteForEveryone = formData.get("deleteForEveryone") === "true";
@@ -159,13 +228,15 @@ export async function deleteMessageAction(_prev: ActionState, formData: FormData
 export async function toggleFavoriteAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  if (user.role !== "citizen") return { error: "not_citizen" };
+  if (!isParticipant(user.role)) return { error: "not_citizen" };
 
   const messageId = String(formData.get("messageId") ?? "");
 
   if (!messageId) {
     return { error: "invalid" };
   }
+  // Only messages of a community the user belongs to.
+  if (!(await messageCommunityFor(user.id, messageId))) return { error: "not_found" };
 
   const existingFavorite = await db
     .select()
@@ -193,58 +264,70 @@ export async function toggleFavoriteAction(_prev: ActionState, formData: FormDat
   return {};
 }
 
+/**
+ * Report with a reason. Enough different people reporting (3, or 2 for sexual content/violence)
+ * hide the message at once; the staff then keeps or removes it (Moderation → Chat reports).
+ */
 export async function reportMessageAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  if (user.role !== "citizen") return { error: "not_citizen" };
+  if (!isParticipant(user.role)) return { error: "not_citizen" };
 
   const messageId = String(formData.get("messageId") ?? "");
-  const reason = String(formData.get("reason") ?? "").trim();
+  const reasonCode = String(formData.get("reasonCode") ?? "");
+  const detail = String(formData.get("reason") ?? "").trim();
 
-  if (!messageId || !reason) {
+  if (!UUID_PATTERN.test(messageId) || !isChatReportReason(reasonCode) || detail.length > CHAT_REPORT_DETAIL_MAX) {
     return { error: "invalid" };
   }
+  if (!rateLimit(`chat-report:${user.id}`, 10, 60 * 60 * 1000)) return { error: "too_many_messages" };
+  if (!(await messageCommunityFor(user.id, messageId))) return { error: "not_found" };
 
-  // Verificar se já denunciou
-  const existingReport = await db
-    .select()
-    .from(messageReports)
-    .where(
-      and(
-        eq(messageReports.messageId, messageId),
-        eq(messageReports.reporterId, user.id)
-      )
-    )
+  const [target] = await db
+    .select({ userId: communityChat.userId, hiddenAt: communityChat.hiddenAt })
+    .from(communityChat)
+    .where(eq(communityChat.id, messageId))
     .limit(1);
+  if (!target) return { error: "not_found" };
+  if (target.userId === user.id) return { error: "invalid" };
 
-  if (existingReport[0]) {
-    return { error: "already_reported" };
+  const inserted = await db
+    .insert(messageReports)
+    .values({ messageId, reporterId: user.id, reason: detail, reasonCode })
+    .onConflictDoNothing()
+    .returning({ id: messageReports.id });
+  if (inserted.length === 0) return { error: "already_reported" };
+
+  if (!target.hiddenAt) {
+    const reports = await db
+      .select({ reason: messageReports.reasonCode })
+      .from(messageReports)
+      .where(and(eq(messageReports.messageId, messageId), eq(messageReports.status, "pending")));
+    if (shouldHideForReports(reports.map((r) => r.reason))) await hideChatMessage(messageId, "reports");
   }
-
-  await db.insert(messageReports).values({
-    messageId,
-    reporterId: user.id,
-    reason,
-  });
 
   revalidatePath("/community");
   return {};
 }
 
-export async function getCommunityMessages(limit: number = 50) {
-  const messages = await db
-    .select({
-      id: communityChat.id,
-      message: communityChat.message,
-      userId: communityChat.userId,
-      createdAt: communityChat.createdAt,
-      editedAt: communityChat.editedAt,
-      deletedAt: communityChat.deletedAt,
-      deleteForEveryone: communityChat.deleteForEveryone,
-    })
-    .from(communityChat)
-    .orderBy(communityChat.createdAt)
-    .limit(limit);
+/** Personal block: stop seeing someone's messages (they are not told). */
+export async function blockChatUserAction(blockedId: string): Promise<ActionState> {
+  const user = await getCurrentUser();
+  if (!user) redirect("/login");
+  if (!isParticipant(user.role)) return { error: "not_citizen" };
+  if (!UUID_PATTERN.test(blockedId) || blockedId === user.id) return { error: "invalid" };
+  const [target] = await db.select({ id: users.id }).from(users).where(eq(users.id, blockedId)).limit(1);
+  if (!target) return { error: "not_found" };
+  await db.insert(chatBlocks).values({ blockerId: user.id, blockedId }).onConflictDoNothing();
+  revalidatePath("/community");
+  return {};
+}
 
-  return messages;
+export async function unblockChatUserAction(blockedId: string): Promise<ActionState> {
+  const user = await getCurrentUser();
+  if (!user) redirect("/login");
+  if (!UUID_PATTERN.test(blockedId)) return { error: "invalid" };
+  await db.delete(chatBlocks).where(and(eq(chatBlocks.blockerId, user.id), eq(chatBlocks.blockedId, blockedId)));
+  revalidatePath("/community");
+  return {};
 }
